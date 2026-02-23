@@ -1,10 +1,13 @@
 // ---------- CANVAS ----------
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
-window.addEventListener("resize", ()=>{
+function resizeGame(){
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
-});
+}
+
+resizeGame();
+window.addEventListener("resize", resizeGame);
 
 // ---------- GAME STATE ----------
 let gameState = "start";
