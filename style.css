@@ -1,8 +1,11 @@
-body {
+html, body {
   margin: 0;
+  padding: 0;
   background: black;
   overflow: hidden;
+  touch-action: none;
 }
+
 canvas {
   display: block;
 }
