@@ -9,6 +9,11 @@ const ctx = canvas.getContext("2d");
 canvas.width = GAME_WIDTH;
 canvas.height = GAME_HEIGHT;
 
+// blokuje zaznaczanie i menu przytrzymania
+canvas.addEventListener("contextmenu", e => e.preventDefault());
+canvas.addEventListener("selectstart", e => e.preventDefault());
+canvas.addEventListener("dragstart", e => e.preventDefault());
+
 function resize(){
   const scale = Math.min(
     window.innerWidth / GAME_WIDTH,
@@ -21,11 +26,11 @@ function resize(){
 
 window.addEventListener("resize", resize);
 resize();
-// ---------- GAME STATE ----------
+// ---------- GAME STATE --------------------------------------
 let gameState = "start";
 let loadingTimer = 0;
 
-// ---------- PLAYER ----------
+// ---------- PLAYER ----------------------------------------------
 let player = {
   x: canvas.width/2 - 15,
   y: canvas.height - 120,
@@ -41,12 +46,12 @@ let boostButton = {
   y: 0,
   r: 28
 };
-// ---------- PHYSICS ----------
+// ---------- PHYSICS ----------------------------------------------
 let gravity = 2400;
 let jumpPower = -1000;
 let maxFall = 1400;
-let speedKeyboard = 550;
-let speedTouch = 300;
+let speedKeyboard = 600;
+let speedTouch = 400;
 // FLOW
 let airControl = 0.55;     // sterowanie w powietrzu
 let coyoteTime = 0.08;     // można skoczyć chwilę po zejściu
@@ -56,28 +61,28 @@ let jumpBufferTimer = 0;
 let onGround = false;
 
 
-// ---------- SCORE ----------
+// ---------- SCORE ------------------------------------------------
 let worldOffset = 0;
 let score = 0;
 let bestScore = Number(localStorage.getItem("piggyBest")) || 0;
 
 
-// ---------- DANGER ----------
+// ---------- DANGER ----------------------------------------------------
 let dangerY = canvas.height + 200;
 let dangerSpeed = 190;
 
 
 
-// ---------- PLATFORMS ----------
+// ---------- PLATFORMS ----------------------------------------------------
 const PLATFORM_COUNT = 20;
-const PLATFORM_GAP = 140;
+const PLATFORM_GAP = GAME_HEIGHT * 0.22;
 let platforms = [];
 
-// ---------- COINS ----------
+// ---------- COINS -----------------------------------------------------------
 let coins = [];
 let coinScore = 0;
 
-// ---------- boskie szczescie ----------
+// ---------- boskie szczescie --------------------------------------------------
 
 let miracleMargin = 25; // ile px od lawy to „o włos”
 let miraclePower = 5 * PLATFORM_GAP; // 5 platform w górę
@@ -97,11 +102,15 @@ let boostLockTimer = 0;
 
 
 function createPlatform(y){
-  let w = 120 + Math.random()*120;
-  let x = Math.random()*(canvas.width-w);
-  return { x, y, w, h:20 };
-}
 
+  const minW = GAME_WIDTH * 0.18;   // mała
+  const maxW = GAME_WIDTH * 0.32;   // duża
+
+  let w = minW + Math.random()*(maxW - minW);
+  let x = Math.random()*(GAME_WIDTH - w);
+
+  return { x, y, w, h: GAME_HEIGHT * 0.03 };
+}
 function initPlatforms(){
   platforms = [];
 
@@ -167,8 +176,11 @@ document.addEventListener("keyup", e=>{
   if(e.key==="ArrowLeft") left=false;
   if(e.key==="ArrowRight") right=false;
 });
+let touching = false;
+let touchX = 0;
 
 canvas.addEventListener("pointerdown", e=>{
+  e.preventDefault();
 
   const rect = canvas.getBoundingClientRect();
   const mx = e.clientX - rect.left;
@@ -177,22 +189,32 @@ canvas.addEventListener("pointerdown", e=>{
   if(gameState==="start"){ gameState="play"; return; }
   if(gameState==="dead"){ resetGame(); return; }
 
-  // klik w boost
+  // boost button
   const dx = mx - boostButton.x;
   const dy = my - boostButton.y;
-
   if(Math.sqrt(dx*dx + dy*dy) <= boostButton.r){
-      tryBoost();
-      return;
+    tryBoost();
+    return;
   }
 
-  // sterowanie lewo/prawo
-  touchSide = (mx < canvas.width/2 ? -1 : 1);
+  touching = true;
+  touchX = mx;
 });
 
-canvas.addEventListener("pointerup", ()=>touchSide=0);
-canvas.addEventListener("pointercancel", ()=>touchSide=0);
+canvas.addEventListener("pointermove", e=>{
+  if(!touching) return;
 
+  const rect = canvas.getBoundingClientRect();
+  touchX = e.clientX - rect.left;
+});
+
+canvas.addEventListener("pointerup", ()=>{
+  touching = false;
+});
+
+canvas.addEventListener("pointercancel", ()=>{
+  touching = false;
+});
 // ---------- RESET ----------
 function spawnInitialCoins(){
 
@@ -309,8 +331,11 @@ onGround = false;
 
 if(left) targetSpeed = -speedKeyboard;
 else if(right) targetSpeed = speedKeyboard;
-else if(touchSide===-1) targetSpeed = -speedTouch;
-else if(touchSide===1) targetSpeed = speedTouch;
+else if(touching){
+  let mid = canvas.width/2;
+  let dir = (touchX - mid) / mid;   // -1 do 1
+  targetSpeed = dir * speedTouch;
+}
 
 let control = onGround ? 1 : airControl;
 
