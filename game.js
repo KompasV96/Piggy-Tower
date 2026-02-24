@@ -344,7 +344,7 @@ if(boostLockTimer > 0){
   boostLockTimer -= dtSec;
 }
 
-player.vx += (targetSpeed - player.vx) * 8 * control * dtSec;
+player.vx += (targetSpeed - player.vx) * 12 * control * dtSec;
 
   player.x += player.vx*dtSec;
   if(player.x<0) player.x=0;
@@ -553,3 +553,4 @@ function loop(now){
 }
 
 requestAnimationFrame(loop);
+
