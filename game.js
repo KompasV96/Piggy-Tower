@@ -1,14 +1,26 @@
 // ---------- CANVAS ----------
+const GAME_WIDTH = 360;
+const GAME_HEIGHT = 640;
+
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
-function resizeGame(){
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+
+// stała rozdzielczość świata (fizyka!)
+canvas.width = GAME_WIDTH;
+canvas.height = GAME_HEIGHT;
+
+function resize(){
+  const scale = Math.min(
+    window.innerWidth / GAME_WIDTH,
+    window.innerHeight / GAME_HEIGHT
+  );
+
+  canvas.style.width = GAME_WIDTH * scale + "px";
+  canvas.style.height = GAME_HEIGHT * scale + "px";
 }
 
-resizeGame();
-window.addEventListener("resize", resizeGame);
-
+window.addEventListener("resize", resize);
+resize();
 // ---------- GAME STATE ----------
 let gameState = "start";
 let loadingTimer = 0;
