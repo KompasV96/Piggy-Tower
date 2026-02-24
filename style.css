@@ -1,11 +1,13 @@
 html, body {
   margin: 0;
   padding: 0;
-  background: black;
   overflow: hidden;
+  background: black;
   touch-action: none;
 }
 
 canvas {
   display: block;
+  margin: auto;
+  background: #222;
 }
