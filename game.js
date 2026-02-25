@@ -130,6 +130,9 @@ let boostVisualTime = 0;
 let boostAfterglow = 0;
 const BOOST_AFTERGLOW_TIME = 2.5;
 let uiTime = 0;
+let blinkTimer = 0;
+let nextBlink = 2 + Math.random()*3;
+let blink = 0; // 0 = otwarte, 1 = zamknięte
 let screenShakeTime = 0;
 let screenShakePower = 0;
 let boostFlash = 0;
@@ -501,29 +504,48 @@ function updateCoins(){
   }
 }
 function update(dt){
+
   if(updateState(dt)) return;
-  if(gameState!=="play") return; // ← PAUZA FREEZUJE ŚWIAT
 
-  const dtSec=dt/1000;
+  const dtSec = dt/1000;
 
-  updatePlayer(dt,dtSec);
+  // ===== ZAWSZE DZIAŁA (nawet w pauzie) =====
+  uiTime += dtSec;
+
+  // blink
+  blinkTimer += dtSec;
+
+  if(blinkTimer > nextBlink){
+    blink = 1;
+    nextBlink = blinkTimer + 0.12;
+  }
+
+  if(blink === 1 && blinkTimer > nextBlink){
+    blink = 0;
+    nextBlink = blinkTimer + 2 + Math.random()*3;
+  }
+
+  // efekty wizualne
+  if(screenShakeTime > 0){
+    screenShakeTime -= dtSec;
+    if(screenShakeTime < 0) screenShakeTime = 0;
+  }
+
+  if(boostFlash > 0){
+    boostFlash -= dtSec * 6;
+    if(boostFlash < 0) boostFlash = 0;
+  }
+
+  // ===== TU ZATRZYMUJEMY ŚWIAT =====
+  if(gameState !== "play") return;
+
+  // ===== FIZYKA GRY =====
+  updatePlayer(dt, dtSec);
   updatePlatforms(dt);
   updateCoins();
   recyclePlatforms();
   updateScore();
   updateDanger(dtSec);
-  uiTime += dt / 1000;
-
-  // shake + flash zostają
-  if(screenShakeTime > 0){
-    screenShakeTime -= dt/1000;
-    if(screenShakeTime < 0) screenShakeTime = 0;
-  }
-
-  if(boostFlash > 0){
-    boostFlash -= dt/1000 * 6;
-    if(boostFlash < 0) boostFlash = 0;
-  }
 }
 
 function getRainbowColor(t){
@@ -605,33 +627,103 @@ function drawWorld(){
     ctx.fill();
   }
 }
+function getLookDir(){
+
+  // poziom — reaguje mocno
+  let x = player.vx / 600;
+
+  // pion — bardzo delikatnie
+  let y = player.vy / 1800;
+
+  // lekkie patrzenie w kierunku ruchu zamiast spadania
+  if(onGround) y *= 0.2;
+
+  // ograniczenie do wnętrza oka
+  const max = 0.22;
+
+  x = Math.max(-max, Math.min(max, x));
+  y = Math.max(-max, Math.min(max, y));
+
+  return {x, y};
+}
   function drawPlayer(){
+
   let playerBottom = player.y + player.h;
   let lavaDist = dangerY - playerBottom;
 
-  let pigColor;
-  if(boosting){
-    pigColor = getRainbowColor(boostVisualTime);
-  }
-  else if(boostAfterglow > 0){
-    let t = 1 - (boostAfterglow / BOOST_AFTERGLOW_TIME);
-    pigColor = getRainbowColor(t * 0.6);
-  }
-  else{
-    pigColor = getPigColor(lavaDist);
-  }
-
+  const pigColor = "#ff9ecb";
   currentPigColor = pigColor;
 
-ctx.shadowBlur = 18;
-ctx.shadowColor = pigColor;
-ctx.fillStyle = pigColor;
-ctx.fillRect(player.x,player.y,player.w,player.h);
-ctx.shadowBlur = 0;
+  const cx = player.x + player.w/2;
+  const cy = player.y + player.h/2;
+  const r = player.w*0.55;
+    
+    // ===== BOOST AURA =====
+if(boosting || boostAfterglow > 0){
 
-  return pigColor; // HUD użyje koloru
+  let t = boosting
+    ? boostVisualTime
+    : 1 - (boostAfterglow / BOOST_AFTERGLOW_TIME);
+
+  ctx.shadowBlur = 30;
+  ctx.shadowColor = getRainbowColor(t);
+
+}else{
+  ctx.shadowBlur = 0;
 }
 
+  // ===== GŁOWA =====
+  ctx.fillStyle = pigColor;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI*2);
+  ctx.fill();
+
+  // ===== USZY =====
+  ctx.beginPath();
+  ctx.arc(cx-r*0.55, cy-r*0.65, r*0.35, 0, Math.PI*2);
+  ctx.arc(cx+r*0.55, cy-r*0.65, r*0.35, 0, Math.PI*2);
+  ctx.fill();
+
+  // ===== RYJ =====
+  ctx.fillStyle = "#ffb6c1";
+  ctx.beginPath();
+  ctx.ellipse(cx, cy+r*0.15, r*0.55, r*0.38, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // nozdrza
+  ctx.fillStyle = "#a05566";
+  ctx.beginPath();
+  ctx.arc(cx-r*0.18, cy+r*0.15, r*0.09, 0, Math.PI*2);
+  ctx.arc(cx+r*0.18, cy+r*0.15, r*0.09, 0, Math.PI*2);
+  ctx.fill();
+
+  // ===== OCZY =====
+  ctx.fillStyle = "white";
+  ctx.beginPath();
+  ctx.arc(cx-r*0.28, cy-r*0.05, r*0.22, 0, Math.PI*2);
+  ctx.arc(cx+r*0.28, cy-r*0.05, r*0.22, 0, Math.PI*2);
+  ctx.fill();
+    // ===== POWIEKI =====
+if(blink > 0){
+  ctx.fillStyle = pigColor;
+
+  const h = r*0.25 * blink;
+
+  ctx.fillRect(cx-r*0.5, cy-r*0.25, r*0.44, h);
+  ctx.fillRect(cx+r*0.06, cy-r*0.25, r*0.44, h);
+}
+
+  const look = getLookDir();
+
+ctx.fillStyle = "black";
+ctx.beginPath();
+ctx.arc(cx-r*0.28 + look.x*r, cy-r*0.05 + look.y*r, r*0.10, 0, Math.PI*2);
+ctx.arc(cx+r*0.28 + look.x*r, cy-r*0.05 + look.y*r, r*0.10, 0, Math.PI*2);
+ctx.fill();
+
+    ctx.shadowBlur = 0;
+  return pigColor;
+}
 
   function drawHUD(){
 
@@ -769,16 +861,13 @@ function layoutUI(){
   const gap = 14; // odstęp między ikonami
   pauseButton.x = compass.x - compass.r - gap - pauseButton.r;
   pauseButton.y = HUD/2;
+}
 
 
 
   
 
-  // ikona ||
-  ctx.fillStyle = "white";
-  ctx.fillRect(pauseButton.x-5, pauseButton.y-8, 4,16);
-  ctx.fillRect(pauseButton.x+1, pauseButton.y-8, 4,16);
-}
+
 function drawOverlay(title,sub){
 
   ctx.fillStyle="rgba(0,0,0,0.6)";
