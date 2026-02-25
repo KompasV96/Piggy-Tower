@@ -1,3 +1,4 @@
+
 // ---------- CANVAS ----------
 const GAME_WIDTH = 360;
 const GAME_HEIGHT = 640;
@@ -26,6 +27,29 @@ function resize(){
 
 window.addEventListener("resize", resize);
 resize();
+function getPointerPos(e){
+  const rect = canvas.getBoundingClientRect();
+
+  const scaleX = canvas.width  / rect.width;
+  const scaleY = canvas.height / rect.height;
+
+  return {
+    x: (e.clientX - rect.left) * scaleX,
+    y: (e.clientY - rect.top)  * scaleY
+  };
+}
+function getCompassShake(){
+  let t = getLavaRatio();
+
+  if(t < 0.85) return 0;
+
+  let power = (t - 0.85) / 0.15;
+  return Math.sin(performance.now()*0.04) * 2 * power;
+}
+function getCompassClickPulse(){
+  if(!boostReady) return 0;
+  return Math.sin(performance.now()*0.008)*4 + 4;
+}
 // ---------- GAME STATE --------------------------------------
 let gameState = "start";
 let loadingTimer = 0;
@@ -38,6 +62,8 @@ let player = {
   vx: 0, vy: 0,
   lastY: canvas.height - 120
 };
+let currentPigColor = "#fff";
+let compass = { x:0, y:0, r:26 };
 const UI_MARGIN = 20;
 const SAFE = Math.max(20, canvas.width * 0.04);
 const HUD = 70;
@@ -99,6 +125,13 @@ let boostForce = 3400;       // siła ciągu co sekundę
 let boostGravityFactor =0.18; // lżejsza grawitacja
 let boostControlLock = 0.18;
 let boostLockTimer = 0;
+let boostVisualTime = 0;
+let boostAfterglow = 0;
+const BOOST_AFTERGLOW_TIME = 2.5;
+let uiTime = 0;
+let screenShakeTime = 0;
+let screenShakePower = 0;
+let boostFlash = 0;
 
 
 function createPlatform(y){
@@ -182,19 +215,25 @@ let touchX = 0;
 canvas.addEventListener("pointerdown", e=>{
   e.preventDefault();
 
-  const rect = canvas.getBoundingClientRect();
-  const mx = e.clientX - rect.left;
-  const my = e.clientY - rect.top;
+  const pos = getPointerPos(e);
+  const mx = pos.x;
+  const my = pos.y;
 
   if(gameState==="start"){ gameState="play"; return; }
   if(gameState==="dead"){ resetGame(); return; }
 
-  // boost button
-  const dx = mx - boostButton.x;
-  const dy = my - boostButton.y;
-  if(Math.sqrt(dx*dx + dy*dy) <= boostButton.r){
-    tryBoost();
-    return;
+  // HUD nie steruje ruchem
+  if(my <= HUD){
+
+    const dx = mx - compass.x;
+    const dy = my - compass.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+
+    if(dist <= compass.r * 0.75){
+      tryBoost();
+    }
+
+    return; // 🔥 BLOKUJE RUCH W HUD
   }
 
   touching = true;
@@ -204,8 +243,8 @@ canvas.addEventListener("pointerdown", e=>{
 canvas.addEventListener("pointermove", e=>{
   if(!touching) return;
 
-  const rect = canvas.getBoundingClientRect();
-  touchX = e.clientX - rect.left;
+  const pos = getPointerPos(e);
+touchX = pos.x;
 });
 
 canvas.addEventListener("pointerup", ()=>{
@@ -270,12 +309,16 @@ function tryBoost(){
   boostReady = false;
   boosting = true;
   boostTimer = boostDuration;
+  boostVisualTime = 0;   // ← START ANIMACJI
 
   // lekki startowy kop
   if(player.vy > 0) player.vy *= 0.3;
   player.vy = -900;
 
   boostLockTimer = boostControlLock;
+  screenShakeTime = 0.22;   // ile trwa
+screenShakePower = 26;    // siła
+  boostFlash = 1;
 }
 
 function updateState(dt){
@@ -361,15 +404,26 @@ if(boosting){
 
     boostTimer -= dtSec;
     if(boostTimer <= 0){
-        boosting = false;
-    }
+    boosting = false;
+    boostAfterglow = BOOST_AFTERGLOW_TIME;
+}
 }
 
 player.vy += gravity * gravityFactor * dtSec;
 
 if(player.vy > maxFall) player.vy = maxFall;
 player.y += player.vy * dtSec;
+  // animacja boosta
+if(boosting){
+  boostVisualTime = 1 - (boostTimer / boostDuration);
+}else{
+  boostVisualTime = 0;
 }
+  if(boostAfterglow > 0){
+  boostAfterglow -= dtSec;
+}
+}
+
 function updatePlatforms(dt){
 
   // --- KOLIZJE ---
@@ -443,44 +497,130 @@ function update(dt){
   recyclePlatforms();
   updateScore();
   updateDanger(dtSec);
+  uiTime += dt / 1000;
+// SHAKE
+if(screenShakeTime > 0){
+  screenShakeTime -= dt/1000;
+  if(screenShakeTime < 0) screenShakeTime = 0;
 }
 
-// ================= DRAW =================
+// FLASH (osobno!)
+if(boostFlash > 0){
+  boostFlash -= dt/1000 * 6;
+  if(boostFlash < 0) boostFlash = 0;
+}
+}
 
-function draw(){
+function getRainbowColor(t){
+  let a = t * Math.PI * 6; // ile zmian koloru w trakcie boosta
+  let r = Math.sin(a)*127+128;
+  let g = Math.sin(a+2)*127+128;
+  let b = Math.sin(a+4)*127+128;
+  return `rgb(${r|0},${g|0},${b|0})`;
+}
+function getScreenShakeOffset(){
+  if(screenShakeTime <= 0) return {x:0,y:0};
 
-  // ===== CZYŚĆ EKRAN (TYLKO RAZ) =====
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const DURATION = 0.22;
+  let t = 1 - (screenShakeTime / DURATION); // ODWRÓCONE
 
+  // mocny start → szybki zanik
+  let intensity = screenShakePower * (1 - t*t*t);
+
+  return {
+    x: (Math.random()*2-1) * intensity,
+    y: (Math.random()*2-1) * intensity * 0.6
+  };
+}
+
+function getPigColor(dist){
+
+  // krytycznie — zaraz śmierć
+  if(dist < 140) return "#ff2a2a";
+
+  // ostrzeżenie
+  if(dist < 280) return "#ff00aa";
+
+  // bezpiecznie
+  return "#00e5ff";
+}
+
+function getLavaRatio(){
+  let dist = dangerY - (player.y + player.h);
+
+  // zakres w którym kompas reaguje
+  let max = canvas.height * 1.2;
+
+  let t = 1 - (dist / max);
+  if(t < 0) t = 0;
+  if(t > 1) t = 1;
+
+  return t;
+}
 
   // ====== WORLD ======
+ 
+function drawWorld(){
   ctx.save();
   ctx.translate(0, HUD);
-  
 
+  drawLava();
+  drawPlatforms();
+  drawCoins();
+  drawPlayer();
+
+  ctx.restore();
+}
+  function drawLava(){
   let gradient=ctx.createLinearGradient(0,dangerY,0,canvas.height);
   gradient.addColorStop(0,"#ff0040");
   gradient.addColorStop(1,"#300");
   ctx.fillStyle=gradient;
   ctx.fillRect(0,dangerY,canvas.width,canvas.height);
-
+}
+  function drawPlatforms(){
   ctx.fillStyle="#0f0";
   for(let p of platforms) ctx.fillRect(p.x,p.y,p.w,p.h);
-
+}
+  function drawCoins(){
   ctx.fillStyle="gold";
   for(let c of coins){
     ctx.beginPath();
     ctx.arc(c.x,c.y,c.r,0,Math.PI*2);
     ctx.fill();
   }
+}
+  function drawPlayer(){
+  let playerBottom = player.y + player.h;
+  let lavaDist = dangerY - playerBottom;
 
-  ctx.fillStyle="#f00";
-  ctx.fillRect(player.x,player.y,player.w,player.h);
+  let pigColor;
+  if(boosting){
+    pigColor = getRainbowColor(boostVisualTime);
+  }
+  else if(boostAfterglow > 0){
+    let t = 1 - (boostAfterglow / BOOST_AFTERGLOW_TIME);
+    pigColor = getRainbowColor(t * 0.6);
+  }
+  else{
+    pigColor = getPigColor(lavaDist);
+  }
 
-  ctx.restore();
+  currentPigColor = pigColor;
+
+ctx.shadowBlur = 18;
+ctx.shadowColor = pigColor;
+ctx.fillStyle = pigColor;
+ctx.fillRect(player.x,player.y,player.w,player.h);
+ctx.shadowBlur = 0;
+
+  return pigColor; // HUD użyje koloru
+}
 
 
-  // ===== HUD PANEL =====
+  function drawHUD(){
+
+  // panel
   ctx.fillStyle="#2a2a2a";
   ctx.fillRect(0,0,canvas.width,HUD);
 
@@ -491,40 +631,126 @@ function draw(){
   ctx.lineTo(canvas.width,HUD);
   ctx.stroke();
 
+  drawCompass();
+  drawScore();
+  drawCompassCircle();
+}
+  function drawCompass(){
+  let lavaT = getLavaRatio();
 
-  // ===== HUD TEXT =====
-  // ===== BOOST BUTTON =====
-boostButton.x = canvas.width - SAFE - boostButton.r;
-boostButton.y = HUD/2;
+  let barW = canvas.width * 0.5;
+  let barH = 6;
+  let barX = canvas.width/2 - barW/2;
+  let barY = HUD - 10;
 
-ctx.beginPath();
-ctx.arc(boostButton.x, boostButton.y, boostButton.r, 0, Math.PI*2);
+  ctx.fillStyle="#222";
+  ctx.fillRect(barX,barY,barW,barH);
 
-if(boostReady){
-  ctx.fillStyle = "#ff8800";
-}else{
-  ctx.fillStyle = "#555";
+  let r = Math.floor(255 * lavaT);
+  let g = Math.floor(200 * (1-lavaT));
+  let b = 255 - r;
+
+  ctx.fillStyle=`rgb(${r},${g},${b})`;
+  ctx.fillRect(barX,barY,barW*lavaT,barH);
 }
 
-ctx.fill();
 
-ctx.fillStyle = "white";
-ctx.font = "14px Arial";
-ctx.textAlign = "center";
-ctx.textBaseline = "middle";
-ctx.fillText("BOOST", boostButton.x, boostButton.y);
-  
+ function drawScore(){
   ctx.textAlign="left";
   ctx.textBaseline="top";
-  ctx.fillStyle="white";
   ctx.font="20px Arial";
+  ctx.fillStyle = currentPigColor;
+
   ctx.fillText("Score: "+score, SAFE, SAFE);
   ctx.fillText("Best: "+bestScore, SAFE, SAFE+25);
+}
+function getCompassAngle(){
+  let t = getLavaRatio();
 
+  // zaczyna reagować dopiero gdy naprawdę niebezpiecznie
+  let start = 0.55;
+  if(t < start) return 0;
+
+  let danger = (t - start) / (1 - start);
+  if(danger > 1) danger = 1;
+
+  // easing — powoli, potem gwałtownie
+  danger = danger * danger;
+
+  return danger * Math.PI/2; // do 90°
+}
+function drawCompassCircle(){
+
+  compass.x = canvas.width - SAFE - 32;
+  compass.y = HUD/2;
+  compass.r = 26;
+
+  const shake = getCompassShake();
+const cx = compass.x + shake;
+const cy = compass.y
+
+;
+
+  let lavaDist = dangerY - (player.y + player.h);
+
+  // poziom zagrożenia
+  let danger = 0;
+  if(lavaDist < 280) danger = 1 - (lavaDist / 280);
+  if(danger < 0) danger = 0;
+  if(danger > 1) danger = 1;
+
+  // puls
+  let pulse = Math.sin(uiTime * 6) * danger;
+  let r = compass.r + getCompassClickPulse();
+
+  // kolor
+  let color = getPigColor(lavaDist);
+
+  ctx.shadowBlur = 25 * danger;
+  ctx.shadowColor = color;
+
+  // obręcz
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI*2);
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = color;
+  ctx.stroke();
+
+  ctx.shadowBlur = 0;
+
+  // środek
+  ctx.beginPath();
+  ctx.arc(cx, cy, r*0.15, 0, Math.PI*2);
+  ctx.fillStyle = color;
+  ctx.fill();
+
+// obrót
+let ang = getCompassAngle();
+
+ctx.save();
+ctx.translate(cx, cy);
+ctx.rotate(ang);
+
+// strzałka
+ctx.beginPath();
+ctx.moveTo(0, r*0.65);
+ctx.lineTo(-r*0.35, -r*0.2);
+ctx.lineTo(r*0.35, -r*0.2);
+ctx.closePath();
+
+ctx.fillStyle = "#ccc";
+ctx.fill();
+
+ctx.restore();
+}
+
+ 
+ function drawOverlayLayer(){
   if(gameState==="start") drawOverlay("PIGGY TOWER","tap to start");
   if(gameState==="dead") drawOverlay("GAME OVER","tap to restart");
   if(gameState==="loading") drawOverlay("loading...","");
-}
+ }
+
 function drawOverlay(title,sub){
   ctx.fillStyle="rgba(0,0,0,0.6)";
   ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -538,6 +764,31 @@ function drawOverlay(title,sub){
   ctx.font="25px Arial";
   ctx.fillText(sub,canvas.width/2,canvas.height/2+20);
 }
+
+// ================= DRAW =================
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  const shake = getScreenShakeOffset();
+
+  ctx.save();
+  ctx.translate(shake.x, shake.y);
+
+  drawWorld();
+  drawHUD();
+
+  ctx.restore();
+
+  drawOverlayLayer();
+
+  // FLASH MUSI BYĆ NA KOŃCU
+  if(boostFlash > 0){
+    ctx.fillStyle = "rgba(255,255,255," + (boostFlash*0.35) + ")";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+  }
+}
+
 // ================= LOOP =================
 
 let lastTime=performance.now();
@@ -553,5 +804,3 @@ function loop(now){
 }
 
 requestAnimationFrame(loop);
-
-
