@@ -48,10 +48,11 @@ function getCompassShake(){
 }
 function getCompassClickPulse(){
   if(!boostReady) return 0;
-  return Math.sin(performance.now()*0.008)*4 + 4;
+  return Math.sin(uiTime * 8) * 4 + 4;
 }
 // ---------- GAME STATE --------------------------------------
-let gameState = "start";
+let gameState = "start"; 
+// start | play | pause | dead | loading
 let loadingTimer = 0;
 
 // ---------- PLAYER ----------------------------------------------
@@ -213,11 +214,17 @@ let touching = false;
 let touchX = 0;
 
 canvas.addEventListener("pointerdown", e=>{
+  layoutUI();
   e.preventDefault();
 
   const pos = getPointerPos(e);
   const mx = pos.x;
   const my = pos.y;
+
+  if(gameState==="pause"){
+    gameState="play";
+    return;
+  }
 
   if(gameState==="start"){ gameState="play"; return; }
   if(gameState==="dead"){ resetGame(); return; }
@@ -225,16 +232,24 @@ canvas.addEventListener("pointerdown", e=>{
   // HUD nie steruje ruchem
   if(my <= HUD){
 
-    const dx = mx - compass.x;
-    const dy = my - compass.y;
-    const dist = Math.sqrt(dx*dx + dy*dy);
-
-    if(dist <= compass.r * 0.75){
-      tryBoost();
-    }
-
-    return; // 🔥 BLOKUJE RUCH W HUD
+  // PAUSE
+  let dxp = mx - pauseButton.x;
+  let dyp = my - pauseButton.y;
+  if(Math.sqrt(dxp*dxp+dyp*dyp) <= pauseButton.r){
+    if(gameState==="play") gameState="pause";
+    else if(gameState==="pause") gameState="play";
+    return;
   }
+
+  // BOOST
+  const dx = mx - compass.x;
+  const dy = my - compass.y;
+  if(Math.sqrt(dx*dx+dy*dy) <= compass.r*0.75){
+    tryBoost();
+  }
+
+  return;
+}
 
   touching = true;
   touchX = mx;
@@ -487,7 +502,7 @@ function updateCoins(){
 }
 function update(dt){
   if(updateState(dt)) return;
-  if(gameState!=="play") return;
+  if(gameState!=="play") return; // ← PAUZA FREEZUJE ŚWIAT
 
   const dtSec=dt/1000;
 
@@ -498,17 +513,17 @@ function update(dt){
   updateScore();
   updateDanger(dtSec);
   uiTime += dt / 1000;
-// SHAKE
-if(screenShakeTime > 0){
-  screenShakeTime -= dt/1000;
-  if(screenShakeTime < 0) screenShakeTime = 0;
-}
 
-// FLASH (osobno!)
-if(boostFlash > 0){
-  boostFlash -= dt/1000 * 6;
-  if(boostFlash < 0) boostFlash = 0;
-}
+  // shake + flash zostają
+  if(screenShakeTime > 0){
+    screenShakeTime -= dt/1000;
+    if(screenShakeTime < 0) screenShakeTime = 0;
+  }
+
+  if(boostFlash > 0){
+    boostFlash -= dt/1000 * 6;
+    if(boostFlash < 0) boostFlash = 0;
+  }
 }
 
 function getRainbowColor(t){
@@ -635,6 +650,7 @@ ctx.shadowBlur = 0;
   drawScore();
   drawCompassCircle();
 }
+let pauseButton = { x:0, y:0, r:18 };
   function drawCompass(){
   let lavaT = getLavaRatio();
 
@@ -743,15 +759,28 @@ ctx.fill();
 
 ctx.restore();
 }
+function layoutUI(){
 
- 
- function drawOverlayLayer(){
-  if(gameState==="start") drawOverlay("PIGGY TOWER","tap to start");
-  if(gameState==="dead") drawOverlay("GAME OVER","tap to restart");
-  if(gameState==="loading") drawOverlay("loading...","");
- }
+  // najpierw pozycja kompasu
+  compass.x = canvas.width - SAFE - 32;
+  compass.y = HUD/2;
 
+  // pauza obok kompasu (z lewej strony)
+  const gap = 14; // odstęp między ikonami
+  pauseButton.x = compass.x - compass.r - gap - pauseButton.r;
+  pauseButton.y = HUD/2;
+
+
+
+  
+
+  // ikona ||
+  ctx.fillStyle = "white";
+  ctx.fillRect(pauseButton.x-5, pauseButton.y-8, 4,16);
+  ctx.fillRect(pauseButton.x+1, pauseButton.y-8, 4,16);
+}
 function drawOverlay(title,sub){
+
   ctx.fillStyle="rgba(0,0,0,0.6)";
   ctx.fillRect(0,0,canvas.width,canvas.height);
 
@@ -764,25 +793,87 @@ function drawOverlay(title,sub){
   ctx.font="25px Arial";
   ctx.fillText(sub,canvas.width/2,canvas.height/2+20);
 }
+function drawPauseOverlay(){
+
+  // przyciemnienie
+  ctx.fillStyle="rgba(0,0,0,0.55)";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  ctx.fillStyle="white";
+  ctx.textAlign="center";
+
+  // tytuł
+  ctx.font="50px Arial";
+  ctx.fillText("PAUSE",canvas.width/2,canvas.height/2-40);
+
+  // play button
+  const cx = canvas.width/2;
+  const cy = canvas.height/2 + 10;
+  const r = 26;
+
+  ctx.beginPath();
+  ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.strokeStyle="white";
+  ctx.lineWidth=3;
+  ctx.stroke();
+
+  // trójkąt ▶
+  ctx.beginPath();
+  ctx.moveTo(cx-6,cy-10);
+  ctx.lineTo(cx-6,cy+10);
+  ctx.lineTo(cx+12,cy);
+  ctx.closePath();
+  ctx.fill();
+
+  // tekst
+  ctx.font="22px Arial";
+  ctx.fillText("tap anywhere to continue",canvas.width/2,cy+50);
+}
+
+ 
+ function drawOverlayLayer(){
+  if(gameState==="start") drawOverlay("PIGGY TOWER","tap to start");
+  if(gameState==="dead") drawOverlay("GAME OVER","tap to restart");
+  if(gameState==="loading") drawOverlay("loading...","");
+   if(gameState==="pause") drawPauseOverlay();
+ }
+
+function drawPauseButton(){
+  ctx.beginPath();
+  ctx.arc(pauseButton.x, pauseButton.y, pauseButton.r, 0, Math.PI*2);
+  ctx.fillStyle = "#444";
+  ctx.fill();
+
+  ctx.fillStyle = "white";
+  ctx.fillRect(pauseButton.x-5, pauseButton.y-8, 4,16);
+  ctx.fillRect(pauseButton.x+1, pauseButton.y-8, 4,16);
+}
 
 // ================= DRAW =================
 
 function draw(){
+  layoutUI();
+  
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
   const shake = getScreenShakeOffset();
 
+  // tylko świat się trzęsie
   ctx.save();
   ctx.translate(shake.x, shake.y);
-
   drawWorld();
-  drawHUD();
-
   ctx.restore();
 
-  drawOverlayLayer();
+  // HUD stabilny
+  drawHUD();
 
-  // FLASH MUSI BYĆ NA KOŃCU
+  // overlay + UI
+ drawOverlayLayer();
+
+if(gameState !== "pause")
+  drawPauseButton();
+
+  // flash na końcu
   if(boostFlash > 0){
     ctx.fillStyle = "rgba(255,255,255," + (boostFlash*0.35) + ")";
     ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -792,15 +883,22 @@ function draw(){
 // ================= LOOP =================
 
 let lastTime=performance.now();
-
 function loop(now){
-  let dt=now-lastTime;
-  if(dt>50) dt=50;
-  lastTime=now;
+  try{
+    let dt=now-lastTime;
+    if(dt>50) dt=50;
+    lastTime=now;
 
-  update(dt);
-  draw();
+    update(dt);
+    draw();
+  }
+  catch(e){
+    console.error("GAME LOOP ERROR:", e);
+  }
+
   requestAnimationFrame(loop);
 }
+
+
 
 requestAnimationFrame(loop);
