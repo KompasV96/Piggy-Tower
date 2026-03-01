@@ -593,7 +593,58 @@ function getLavaRatio(){
 
   return t;
 }
+function drawBackground(){
 
+  // niebo
+  const g = ctx.createLinearGradient(0,0,0,canvas.height);
+  g.addColorStop(0,"#050814");
+  g.addColorStop(1,"#0b1a33");
+
+  ctx.fillStyle = g;
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  // ===== KSIĘŻYC =====
+  ctx.fillStyle="#f5f3ce";
+  ctx.beginPath();
+  ctx.arc(canvas.width*0.78, 110, 38, 0, Math.PI*2);
+  ctx.fill();
+
+  // poświata
+  ctx.fillStyle="rgba(255,255,200,0.08)";
+  ctx.beginPath();
+  ctx.arc(canvas.width*0.78, 110, 80, 0, Math.PI*2);
+  ctx.fill();
+
+
+  // ===== GWIAZDY =====
+  ctx.fillStyle="white";
+  for(let i=0;i<70;i++){
+    let x = (i*97)%canvas.width;
+    let y = (i*53)%canvas.height;
+    ctx.fillRect(x,y,2,2);
+  }
+
+
+  // ===== CHMURY DALEKIE =====
+  ctx.fillStyle="rgba(255,255,255,0.08)";
+  drawCloud(60,180,70);
+  drawCloud(260,240,60);
+  drawCloud(180,120,55);
+
+
+  // ===== CHMURY BLISKIE =====
+  ctx.fillStyle="rgba(255,255,255,0.16)";
+  drawCloud(120,330,90);
+  drawCloud(280,420,110);
+}
+function drawCloud(x,y,s){
+  ctx.beginPath();
+  ctx.arc(x,y,s*0.5,0,Math.PI*2);
+  ctx.arc(x+s*0.6,y+5,s*0.45,0,Math.PI*2);
+  ctx.arc(x-s*0.6,y+8,s*0.4,0,Math.PI*2);
+  ctx.arc(x,y+15,s*0.55,0,Math.PI*2);
+  ctx.fill();
+}
   // ====== WORLD ======
  
 function drawWorld(){
@@ -942,8 +993,8 @@ function drawPauseButton(){
 function draw(){
   layoutUI();
   
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+drawBackground();
   const shake = getScreenShakeOffset();
 
   // tylko świat się trzęsie
