@@ -95,7 +95,7 @@ let bestScore = Number(localStorage.getItem("piggyBest")) || 0;
 
 // ---------- DANGER ----------------------------------------------------
 let dangerY = canvas.height + 200;
-let dangerSpeed = 190;
+let dangerSpeed = 120;
 
 
 
@@ -352,7 +352,7 @@ function updateScore(){
 function updateDanger(dtSec){
 
   // prędkość lawy
-  dangerSpeed = 190 + worldOffset / 2000;
+  dangerSpeed = 200 + worldOffset / 2000;
   dangerY -= dangerSpeed * dtSec;
 
   // odległość lawy od nóg gracza
