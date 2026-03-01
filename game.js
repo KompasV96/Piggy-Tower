@@ -658,12 +658,58 @@ function drawWorld(){
 
   ctx.restore();
 }
-  function drawLava(){
-  let gradient=ctx.createLinearGradient(0,dangerY,0,canvas.height);
-  gradient.addColorStop(0,"#ff0040");
-  gradient.addColorStop(1,"#300");
-  ctx.fillStyle=gradient;
+ function drawLava(){
+
+  const t = uiTime;
+
+  // ===== PODSTAWA =====
+  let grad = ctx.createLinearGradient(0,dangerY,0,canvas.height);
+  grad.addColorStop(0,"#ff2a2a");
+  grad.addColorStop(0.5,"#ff0040");
+  grad.addColorStop(1,"#2a0000");
+
+  ctx.fillStyle = grad;
   ctx.fillRect(0,dangerY,canvas.width,canvas.height);
+
+  // ===== FALA POWIERZCHNI =====
+  ctx.beginPath();
+
+  const waveH = 6;
+
+  for(let x=0;x<=canvas.width;x+=6){
+    let y = dangerY + Math.sin(x*0.05 + t*3)*waveH
+                      + Math.sin(x*0.12 + t*2)*waveH*0.5;
+
+    if(x===0) ctx.moveTo(x,y);
+    else ctx.lineTo(x,y);
+  }
+
+  ctx.lineTo(canvas.width,canvas.height);
+  ctx.lineTo(0,canvas.height);
+  ctx.closePath();
+
+  let surf = ctx.createLinearGradient(0,dangerY-10,0,dangerY+20);
+  surf.addColorStop(0,"#ffff66");
+  surf.addColorStop(1,"#ff3300");
+
+  ctx.fillStyle = surf;
+  ctx.fill();
+
+  // ===== BĄBLE =====
+  ctx.fillStyle="rgba(255,200,120,0.7)";
+
+  for(let i=0;i<8;i++){
+    let x = (i*83 + t*70) % canvas.width;
+    let y = dangerY + 15 + Math.sin(t*4+i)*10;
+
+    ctx.beginPath();
+    ctx.arc(x,y,3+Math.sin(t*5+i)*2,0,Math.PI*2);
+    ctx.fill();
+  }
+
+  // ===== ŻAR =====
+  ctx.fillStyle="rgba(255,120,0,0.15)";
+  ctx.fillRect(0,dangerY-20,canvas.width,20);
 }
 function drawCloud(cx, cy, r){
 
