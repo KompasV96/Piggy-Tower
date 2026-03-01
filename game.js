@@ -665,9 +665,39 @@ function drawWorld(){
   ctx.fillStyle=gradient;
   ctx.fillRect(0,dangerY,canvas.width,canvas.height);
 }
+function drawCloud(cx, cy, r){
+
+  ctx.beginPath();
+
+  ctx.arc(cx-r*1.4, cy, r*0.9, 0, Math.PI*2);
+  ctx.arc(cx-r*0.5, cy-r*0.5, r*1.1, 0, Math.PI*2);
+  ctx.arc(cx+r*0.5, cy-r*0.4, r*1.0, 0, Math.PI*2);
+  ctx.arc(cx+r*1.4, cy, r*0.8, 0, Math.PI*2);
+
+  ctx.closePath();
+  ctx.fill();
+}
+
   function drawPlatforms(){
-  ctx.fillStyle="#0f0";
-  for(let p of platforms) ctx.fillRect(p.x,p.y,p.w,p.h);
+
+  for(let p of platforms){
+
+    const cx = p.x + p.w/2;
+    const cy = p.y + p.h/2;
+    const r  = p.w * 0.22;
+
+    // cień
+    ctx.fillStyle = "rgba(0,0,0,0.25)";
+    drawCloud(cx, cy+6, r);
+
+    // złota chmura
+    ctx.fillStyle = "#ffd76a";
+    drawCloud(cx, cy, r);
+
+    // highlight
+    ctx.fillStyle = "rgba(255,255,255,0.35)";
+    drawCloud(cx-r*0.3, cy-r*0.25, r*0.6);
+  }
 }
   function drawCoins(){
   ctx.fillStyle="gold";
