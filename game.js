@@ -53,6 +53,11 @@ function getCompassClickPulse(){
 let gameState = "start"; 
 // start | play | pause | dead | loading
 let loadingTimer = 0;
+// ---------- AUDIO ----------
+const music = new Audio("audio/techno_loop.mp3");
+music.loop = true;
+music.volume = 0;     // start cisza
+let musicStarted = false;
 
 // ---------- PLAYER ----------------------------------------------
 let player = {
@@ -227,6 +232,10 @@ canvas.addEventListener("pointerdown", e=>{
     gameState="play";
     return;
   }
+ if(!musicStarted){
+  music.play().catch(() => {});
+  musicStarted = true;
+}
 
   if(gameState==="start"){ gameState="play"; return; }
   if(gameState==="dead"){ resetGame(); return; }
@@ -539,6 +548,7 @@ function update(dt){
   if(gameState !== "play") return;
 
   // ===== FIZYKA GRY =====
+  updateMusic(dtSec);
   updatePlayer(dt, dtSec);
   updatePlatforms(dt);
   updateCoins();
@@ -593,6 +603,25 @@ function getLavaRatio(){
 
   return t;
 }
+function updateMusic(dtSec){
+
+if(gameState !== "play"){
+  music.volume += (0 - music.volume) * 2 * dtSec;
+  return;
+}
+
+  // im bliżej lawy tym głośniej
+  let t = getLavaRatio(); // 0..1
+
+  // krzywa napięcia
+  let target = 0.25 + Math.pow(t, 2) * 0.65;
+
+  // płynne przejście
+  music.volume += (target - music.volume) * 1.5 * dtSec;
+
+  if(music.volume < 0.001) music.volume = 0;
+}
+
 function drawBackground(){
 
   // niebo
@@ -746,11 +775,44 @@ function drawCloud(cx, cy, r){
   }
 }
   function drawCoins(){
-  ctx.fillStyle="gold";
+
   for(let c of coins){
+
+    // puls 0.85 → 1.15
+    let pulse = 1 + Math.sin(uiTime*3 + c.x)*0.15;
+
+    let r = c.r * pulse;
+
+    // złoty glow
+    ctx.shadowBlur = 18 + Math.sin(uiTime*8 + c.y)*6;
+    ctx.shadowColor = "rgba(255,215,0,0.7)";
+
+    // gradient
+    const grad = ctx.createRadialGradient(
+      c.x - r*0.4,
+      c.y - r*0.4,
+      2,
+      c.x,
+      c.y,
+      r
+    );
+
+    grad.addColorStop(0,"#fff6b0");
+    grad.addColorStop(0.35,"#ffd700");
+    grad.addColorStop(1,"#b8860b");
+
+    ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.arc(c.x,c.y,c.r,0,Math.PI*2);
+    ctx.arc(c.x, c.y, r, 0, Math.PI*2);
     ctx.fill();
+
+    // jasny błysk
+    ctx.fillStyle="rgba(255,255,200,0.7)";
+    ctx.beginPath();
+    ctx.arc(c.x - r*0.3, c.y - r*0.3, r*0.25, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
   }
 }
 function getLookDir(){
