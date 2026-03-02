@@ -323,6 +323,25 @@ function spawnInitialCoins(){
     }
   }
 }
+
+function snapCameraToPlayer(){
+
+  // chcemy aby gracz był ~65% wysokości ekranu
+  const targetY = REAL_HEIGHT * 0.65;
+
+  const diff = targetY - player.y;
+
+  if(diff === 0) return;
+
+  worldOffset -= diff;
+
+  for(let p of platforms) p.y -= diff;
+  for(let c of coins) c.y -= diff;
+  dangerY -= diff;
+
+  player.y = targetY;
+}
+
 function resetGame(){
   
  player.x = GAME_WIDTH/2 - 15;
@@ -345,7 +364,7 @@ player.y = REAL_HEIGHT - 120;
 
   initPlatforms();   // ← jedyne miejsce generacji monet
   coinScore = 0;
-
+snapCameraToPlayer();
   gameState = "loading";
   loadingTimer = 400;
 
@@ -719,13 +738,13 @@ function drawWorld(){
   const t = uiTime;
 
   // ===== PODSTAWA =====
-  let grad = ctx.createLinearGradient(0,dangerY,0,canvas.height);
+  let grad = ctx.createLinearGradient(0,dangerY,0,REAL_HEIGHT);
   grad.addColorStop(0,"#ff2a2a");
   grad.addColorStop(0.5,"#ff0040");
   grad.addColorStop(1,"#2a0000");
 
   ctx.fillStyle = grad;
-  ctx.fillRect(0,dangerY,canvas.width,canvas.height);
+  ctx.fillRect(0,dangerY,GAME_WIDTH,REAL_HEIGHT);
 
   // ===== FALA POWIERZCHNI =====
   ctx.beginPath();
@@ -740,8 +759,8 @@ function drawWorld(){
     else ctx.lineTo(x,y);
   }
 
-  ctx.lineTo(canvas.width,canvas.height);
-  ctx.lineTo(0,canvas.height);
+  ctx.lineTo(GAME_WIDTH,REAL_HEIGHT);
+ctx.lineTo(0,REAL_HEIGHT);
   ctx.closePath();
 
   let surf = ctx.createLinearGradient(0,dangerY-10,0,dangerY+20);
@@ -755,7 +774,7 @@ function drawWorld(){
   ctx.fillStyle="rgba(255,200,120,0.7)";
 
   for(let i=0;i<8;i++){
-    let x = (i*83 + t*70) % canvas.width;
+    let x = (i*83 + t*70) % GAME_WIDTH;
     let y = dangerY + 15 + Math.sin(t*4+i)*10;
 
     ctx.beginPath();
@@ -765,7 +784,7 @@ function drawWorld(){
 
   // ===== ŻAR =====
   ctx.fillStyle="rgba(255,120,0,0.15)";
-  ctx.fillRect(0,dangerY-20,canvas.width,20);
+  ctx.fillRect(0,dangerY-20,GAME_WIDTH,20);
 }
 function drawCloud(cx, cy, r){
 
