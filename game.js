@@ -23,20 +23,21 @@ function resize(){
     ? window.visualViewport.width
     : window.innerWidth;
 
+  const safeBottom = window.visualViewport
+    ? (window.innerHeight - window.visualViewport.height)
+    : 0;
+
   const scale = Math.min(
     viewW / GAME_WIDTH,
-    viewH / GAME_HEIGHT
+    (viewH - safeBottom) / GAME_HEIGHT
   );
 
-  // rozmiar wizualny (CSS)
   canvas.style.width = GAME_WIDTH * scale + "px";
   canvas.style.height = GAME_HEIGHT * scale + "px";
 
-  // prawdziwa rozdzielczość (HD)
   canvas.width  = Math.floor(GAME_WIDTH * dpr);
   canvas.height = Math.floor(GAME_HEIGHT * dpr);
 
-  // skalowanie rysowania do logicznych jednostek
   ctx.setTransform(dpr,0,0,dpr,0,0);
 }
 window.addEventListener("resize", resize);
