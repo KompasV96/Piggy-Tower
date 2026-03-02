@@ -111,7 +111,7 @@ let coyoteTimer = 0;
 let jumpBuffer = 0.12;     // wciśniesz przed lądowaniem = zadziała
 let jumpBufferTimer = 0;
 let onGround = false;
-
+let deathSmokeTimer = 0;
 
 // ---------- SCORE ------------------------------------------------
 let worldOffset = 0;
@@ -426,6 +426,7 @@ function updateDanger(dtSec){
   // ===== ŚMIERĆ =====
   if(player.y + player.h > dangerY){
       gameState = "dead";
+    deathSmokeTimer = 1.5;
 
       if(score > bestScore){
           bestScore = score;
@@ -594,6 +595,9 @@ function update(dt){
     boostFlash -= dtSec * 6;
     if(boostFlash < 0) boostFlash = 0;
   }
+  if(deathSmokeTimer > 0){
+  deathSmokeTimer -= dtSec;
+}
 
   // ===== TU ZATRZYMUJEMY ŚWIAT =====
   if(gameState !== "play") return;
@@ -730,7 +734,9 @@ function drawWorld(){
   drawPlatforms();
   drawCoins();
   drawPlayer();
-
+  drawPanicBubble();
+  drawDeathSmoke();
+  
   ctx.restore();
 }
  function drawLava(){
@@ -961,12 +967,22 @@ if(boosting || boostAfterglow > 0){
     ctx.beginPath(); ctx.arc(x - size*0.18, y + size*0.35, size*0.1, 0, Math.PI*2);
     ctx.arc(x + size*0.18, y + size*0.35, size*0.1, 0, Math.PI*2); 
     ctx.fill();
-    // ===== OCZY ===== 
-    ctx.fillStyle = "black";
-    ctx.beginPath(); 
-    ctx.arc(x - size*0.35, y - size*0.25, size*0.14, 0, Math.PI*2);
-    ctx.arc(x + size*0.35, y - size*0.25, size*0.14, 0, Math.PI*2);
-    ctx.fill(); 
+    // ===== OCZY =====
+
+let panicLevel = 0;
+
+if(lavaDist < 200){
+  panicLevel = 1 - (lavaDist / 200);
+  if(panicLevel < 0) panicLevel = 0;
+}
+
+let eyeSize = size * (0.14 + panicLevel * 0.08);
+
+ctx.fillStyle = "black";
+ctx.beginPath();
+ctx.arc(x - size*0.35, y - size*0.25, eyeSize, 0, Math.PI*2);
+ctx.arc(x + size*0.35, y - size*0.25, eyeSize, 0, Math.PI*2);
+ctx.fill();
     // ===== POŁYSK W OCZACH ===== 
     ctx.fillStyle = "white";
     ctx.beginPath(); 
@@ -983,11 +999,68 @@ if(blink > 0){
   ctx.fillRect(cx-r*0.5, cy-r*0.25, r*0.44, h);
   ctx.fillRect(cx+r*0.06, cy-r*0.25, r*0.44, h);
 }
-
+    
 
 
     ctx.shadowBlur = 0;
   return pigColor;
+}
+function drawDeathSmoke(){
+
+  if(gameState !== "dead" || deathSmokeTimer <= 0) return;
+
+  const cx = player.x + player.w/2;
+  const cy = player.y;
+
+  for(let i=0;i<6;i++){
+    let t = uiTime*2 + i;
+    let rise = (1.5 - deathSmokeTimer) * 40;
+
+    ctx.fillStyle = "rgba(80,80,80,0.5)";
+    ctx.beginPath();
+    ctx.arc(
+      cx + Math.sin(t)*8,
+      cy - rise - i*6,
+      8 + Math.sin(t)*2,
+      0,
+      Math.PI*2
+    );
+    ctx.fill();
+  }
+}
+
+function drawPanicBubble(){
+
+  if(!player) return;
+
+  let dist = dangerY - (player.y + player.h);
+  if(dist > 180 || dist < 0) return;
+
+  const cx = player.x + player.w/2;
+  const cy = player.y - 35;
+
+  const panic = 1 - (dist / 180);
+  const shake = Math.sin(uiTime*25) * 2 * panic;
+
+  ctx.save();
+  ctx.translate(shake,0);
+
+  ctx.fillStyle = "white";
+  ctx.beginPath();
+  ctx.arc(cx, cy, 22, 0, Math.PI*2);
+  ctx.arc(cx+18, cy+6, 14, 0, Math.PI*2);
+  ctx.arc(cx-16, cy+8, 12, 0, Math.PI*2);
+  ctx.fill();
+
+  ctx.fillStyle = "#ff0033";
+  ctx.font = "bold 18px Arial";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  let text = dist < 70 ? "!!!" : "RUN!";
+  ctx.fillText(text, cx, cy);
+
+  ctx.restore();
 }
 
   function drawHUD(){
