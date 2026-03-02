@@ -5,9 +5,6 @@ const GAME_HEIGHT = 640;
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-// stała rozdzielczość świata (fizyka!)
-canvas.width = GAME_WIDTH;
-canvas.height = GAME_HEIGHT;
 
 // blokuje zaznaczanie i menu przytrzymania
 canvas.addEventListener("contextmenu", e => e.preventDefault());
@@ -15,13 +12,24 @@ canvas.addEventListener("selectstart", e => e.preventDefault());
 canvas.addEventListener("dragstart", e => e.preventDefault());
 
 function resize(){
+
+  const dpr = window.devicePixelRatio || 1;
+
   const scale = Math.min(
     window.innerWidth / GAME_WIDTH,
     window.innerHeight / GAME_HEIGHT
   );
 
+  // rozmiar wizualny (CSS)
   canvas.style.width = GAME_WIDTH * scale + "px";
   canvas.style.height = GAME_HEIGHT * scale + "px";
+
+  // prawdziwa rozdzielczość (HD)
+  canvas.width  = Math.floor(GAME_WIDTH * dpr);
+  canvas.height = Math.floor(GAME_HEIGHT * dpr);
+
+  // skalowanie rysowania do logicznych jednostek
+  ctx.setTransform(dpr,0,0,dpr,0,0);
 }
 
 window.addEventListener("resize", resize);
