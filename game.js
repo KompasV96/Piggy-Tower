@@ -15,9 +15,17 @@ function resize(){
 
   const dpr = window.devicePixelRatio || 1;
 
+  const viewH = window.visualViewport
+    ? window.visualViewport.height
+    : window.innerHeight;
+
+  const viewW = window.visualViewport
+    ? window.visualViewport.width
+    : window.innerWidth;
+
   const scale = Math.min(
-    window.innerWidth / GAME_WIDTH,
-    window.innerHeight / GAME_HEIGHT
+    viewW / GAME_WIDTH,
+    viewH / GAME_HEIGHT
   );
 
   // rozmiar wizualny (CSS)
@@ -31,7 +39,6 @@ function resize(){
   // skalowanie rysowania do logicznych jednostek
   ctx.setTransform(dpr,0,0,dpr,0,0);
 }
-
 window.addEventListener("resize", resize);
 resize();
 function getPointerPos(e){
