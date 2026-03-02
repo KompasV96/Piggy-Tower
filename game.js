@@ -161,8 +161,9 @@ let blink = 0; // 0 = otwarte, 1 = zamknięte
 let screenShakeTime = 0;
 let screenShakePower = 0;
 let boostFlash = 0;
-
-
+let stars = [];
+let shootingStar = null;
+let nextShootingStar = 5 + Math.random()*8; // pierwsza za kilka sekund
 function createPlatform(y){
 
   const minW = GAME_WIDTH * 0.18;   // mała
@@ -190,6 +191,21 @@ platforms.push({
 
   spawnInitialCoins();
 }
+function initStars(){
+  stars = [];
+
+  for(let i=0;i<80;i++){
+    stars.push({
+      x: Math.random() * GAME_WIDTH,
+      y: Math.random() * REAL_HEIGHT,
+      size: Math.random()*2 + 1,
+      phase: Math.random()*Math.PI*2,
+      speed: 1 + Math.random()*2
+    });
+  }
+}
+
+initStars();
 function recyclePlatforms(){
   let highest = Infinity;
 
@@ -571,7 +587,33 @@ function update(dt){
 
   // ===== ZAWSZE DZIAŁA (nawet w pauzie) =====
   uiTime += dtSec;
+    // ===== SPAADAJĄCA GWIAZDA TIMER =====
+nextShootingStar -= dtSec;
 
+if(nextShootingStar <= 0 && !shootingStar){
+
+  shootingStar = {
+    x: Math.random() * GAME_WIDTH,
+    y: 50 + Math.random()*120,
+    vx: -400 - Math.random()*200,
+    vy: 200 + Math.random()*100,
+    life: 1.2
+  };
+
+  nextShootingStar = 10 + Math.random()*15;
+}
+
+// ===== UPDATE GWIAZDY =====
+if(shootingStar){
+
+  shootingStar.x += shootingStar.vx * dtSec;
+  shootingStar.y += shootingStar.vy * dtSec;
+  shootingStar.life -= dtSec;
+
+  if(shootingStar.life <= 0){
+    shootingStar = null;
+  }
+}
   // blink
   blinkTimer += dtSec;
 
@@ -698,13 +740,20 @@ function drawBackground(){
   ctx.arc(GAME_WIDTH*0.78, 110, 80, 0, Math.PI*2);
   ctx.fill();
 
-  // gwiazdy
-  ctx.fillStyle="white";
-  for(let i=0;i<70;i++){
-    let x = (i*97)%GAME_WIDTH;
-    let y = (i*53)%REAL_HEIGHT;
-    ctx.fillRect(x,y,2,2);
-  }
+  // ===== MIGAJĄCE GWIAZDY =====
+for(let s of stars){
+
+  let twinkle = Math.sin(uiTime * s.speed + s.phase) * 0.5 + 0.5;
+
+  // przy lawie lekko bardziej dramatyczne
+  let lavaT = getLavaRatio();
+  twinkle += lavaT * 0.3;
+
+  if(twinkle > 1) twinkle = 1;
+
+  ctx.fillStyle = "rgba(255,255,255," + twinkle + ")";
+  ctx.fillRect(s.x, s.y, s.size, s.size);
+}
 
   // chmury
   ctx.fillStyle="rgba(255,255,255,0.08)";
@@ -715,6 +764,41 @@ function drawBackground(){
   ctx.fillStyle="rgba(255,255,255,0.16)";
   drawCloud(120,330,90);
   drawCloud(280,420,110);
+
+// ===== SPAADAJĄCA GWIAZDA =====
+if(shootingStar){
+
+  const s = shootingStar;
+
+  ctx.save();
+
+  ctx.globalAlpha = Math.max(0, s.life);
+
+  // ogon
+  let grad = ctx.createLinearGradient(
+    s.x, s.y,
+    s.x + 60, s.y - 40
+  );
+
+  grad.addColorStop(0,"white");
+  grad.addColorStop(1,"rgba(255,255,255,0)");
+
+  ctx.strokeStyle = grad;
+  ctx.lineWidth = 3;
+
+  ctx.beginPath();
+  ctx.moveTo(s.x, s.y);
+  ctx.lineTo(s.x + 60, s.y - 40);
+  ctx.stroke();
+
+  // punkt
+  ctx.fillStyle = "white";
+  ctx.beginPath();
+  ctx.arc(s.x, s.y, 3, 0, Math.PI*2);
+  ctx.fill();
+
+  ctx.restore();
+}
 }
 function drawCloud(x,y,s){
   ctx.beginPath();
