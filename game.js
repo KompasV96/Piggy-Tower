@@ -1,3 +1,4 @@
+
 // ---------- CANVAS ----------
 const GAME_WIDTH = 360;
 const GAME_HEIGHT = 640;
