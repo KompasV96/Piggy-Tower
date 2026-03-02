@@ -976,7 +976,7 @@ if(lavaDist < 200){
   if(panicLevel < 0) panicLevel = 0;
 }
 
-let eyeSize = size * (0.14 + panicLevel * 0.08);
+let eyeSize = size * (0.16 + panicLevel * 0.18);
 
 ctx.fillStyle = "black";
 ctx.beginPath();
