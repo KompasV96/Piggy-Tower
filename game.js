@@ -1,6 +1,8 @@
 // ---------- CANVAS ----------
 const GAME_WIDTH = 360;
 const GAME_HEIGHT = 640;
+const HUD = 70;
+const REAL_HEIGHT = GAME_HEIGHT + HUD;
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
@@ -23,30 +25,33 @@ function resize(){
     ? window.visualViewport.width
     : window.innerWidth;
 
-  const safeBottom = window.visualViewport
-    ? (window.innerHeight - window.visualViewport.height)
-    : 0;
+  // 🔥 PRAWDZIWA widoczna wysokość (naprawa iframe / mobile chrome UI)
+  const safeVH = Math.min(viewH, document.documentElement.clientHeight);
 
   const scale = Math.min(
     viewW / GAME_WIDTH,
-    (viewH - safeBottom) / GAME_HEIGHT
+    safeVH / REAL_HEIGHT
   );
 
+  // CSS rozmiar
   canvas.style.width = GAME_WIDTH * scale + "px";
-  canvas.style.height = GAME_HEIGHT * scale + "px";
+  canvas.style.height = REAL_HEIGHT * scale + "px";
 
+  // fizyczna rozdzielczość (HD)
   canvas.width  = Math.floor(GAME_WIDTH * dpr);
-  canvas.height = Math.floor(GAME_HEIGHT * dpr);
+  canvas.height = Math.floor(REAL_HEIGHT * dpr);
 
+  // 1 jednostka = 1 piksel świata
   ctx.setTransform(dpr,0,0,dpr,0,0);
 }
 window.addEventListener("resize", resize);
 resize();
+
 function getPointerPos(e){
   const rect = canvas.getBoundingClientRect();
 
-  const scaleX = canvas.width  / rect.width;
-  const scaleY = canvas.height / rect.height;
+  const scaleX = GAME_WIDTH / rect.width;
+  const scaleY = REAL_HEIGHT / rect.height;
 
   return {
     x: (e.clientX - rect.left) * scaleX,
@@ -77,17 +82,17 @@ let musicStarted = false;
 
 // ---------- PLAYER ----------------------------------------------
 let player = {
-  x: canvas.width/2 - 15,
-  y: canvas.height - 120,
+  x: GAME_WIDTH/2 - 15,
+  y: REAL_HEIGHT - 120,
   w: 30, h: 30,
   vx: 0, vy: 0,
-  lastY: canvas.height - 120
+  lastY: REAL_HEIGHT - 120
 };
 let currentPigColor = "#fff";
 let compass = { x:0, y:0, r:26 };
 const UI_MARGIN = 20;
-const SAFE = Math.max(20, canvas.width * 0.04);
-const HUD = 70;
+const SAFE = Math.max(20, GAME_WIDTH * 0.04);
+
 let boostButton = {
   x: 0,
   y: 0,
@@ -115,7 +120,7 @@ let bestScore = Number(localStorage.getItem("piggyBest")) || 0;
 
 
 // ---------- DANGER ----------------------------------------------------
-let dangerY = canvas.height + 200;
+let dangerY = REAL_HEIGHT + 200;
 let dangerSpeed = 120;
 
 
@@ -171,9 +176,13 @@ function createPlatform(y){
 function initPlatforms(){
   platforms = [];
 
-  platforms.push({ x:0, y:canvas.height-80, w:canvas.width, h:20 });
-
-  let y = canvas.height-80-PLATFORM_GAP;
+platforms.push({
+  x:0,
+  y:REAL_HEIGHT-80,
+  w:GAME_WIDTH,
+  h:20
+});
+  let y = REAL_HEIGHT - 80 - PLATFORM_GAP;
   for(let i=1;i<PLATFORM_COUNT;i++){
     platforms.push(createPlatform(y));
     y -= PLATFORM_GAP;
@@ -189,7 +198,7 @@ function recyclePlatforms(){
   }
 
   for(let p of platforms){
-    if(p.y > canvas.height + 50){
+    if(p.y > REAL_HEIGHT + 50){
 
       highest -= PLATFORM_GAP;
       let np = createPlatform(highest);
@@ -316,8 +325,8 @@ function spawnInitialCoins(){
 }
 function resetGame(){
   
-  player.x = canvas.width/2 - 15;
-  player.y = canvas.height - 120;
+ player.x = GAME_WIDTH/2 - 15;
+player.y = REAL_HEIGHT - 120;
   player.vx = 0;
   player.vy = 0;
   player.lastY = player.y;
@@ -325,7 +334,7 @@ function resetGame(){
   worldOffset = 0;
   score = 0;
 
-  dangerY = canvas.height + 200;
+  dangerY = REAL_HEIGHT + 200;
   dangerSpeed = 0;
 
   miracleUsed = false;
@@ -418,7 +427,7 @@ if(left) targetSpeed = -speedKeyboard;
 else if(right) targetSpeed = speedKeyboard;
 else if(touching){
 
-  let mid = canvas.width/2;
+ let mid = GAME_WIDTH/2;
   let dist = (touchX - mid) / mid; // -1..1
 
   // martwa strefa (stabilność)
@@ -440,7 +449,7 @@ player.vx += (targetSpeed - player.vx) * 14 * control * dtSec;
 
   player.x += player.vx*dtSec;
   if(player.x<0) player.x=0;
-  if(player.x+player.w>canvas.width) player.x=canvas.width-player.w;
+  if(player.x+player.w>GAME_WIDTH) player.x=GAME_WIDTH-player.w;
 
   // grawitacja
   let gravityFactor = 1;
@@ -498,11 +507,11 @@ break;
   }
 
   // ===== KAMERA =====
-  if(player.y < canvas.height/2){
+  if(player.y < REAL_HEIGHT/2){
 
-    let diff = canvas.height/2 - player.y;
+    let diff = REAL_HEIGHT/2 - player.y;
 
-    player.y = canvas.height/2;
+    player.y = REAL_HEIGHT/2;
     worldOffset += diff;
 
     for(let p of platforms) p.y += diff;
@@ -529,7 +538,7 @@ function updateCoins(){
     }
 
     // usuwamy gdy spadną poza ekran
-    if(c.y > canvas.height + 20){
+    if(c.y > REAL_HEIGHT + 20){
         coins.splice(i,1);
     }
   }
@@ -618,7 +627,7 @@ function getLavaRatio(){
   let dist = dangerY - (player.y + player.h);
 
   // zakres w którym kompas reaguje
-  let max = canvas.height * 1.2;
+  let max = REAL_HEIGHT * 1.2;
 
   let t = 1 - (dist / max);
   if(t < 0) t = 0;
@@ -648,43 +657,38 @@ if(gameState !== "play"){
 function drawBackground(){
 
   // niebo
-  const g = ctx.createLinearGradient(0,0,0,canvas.height);
+  const g = ctx.createLinearGradient(0,0,0,REAL_HEIGHT);
   g.addColorStop(0,"#050814");
   g.addColorStop(1,"#0b1a33");
 
   ctx.fillStyle = g;
-  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillRect(0,0,GAME_WIDTH,REAL_HEIGHT);
 
-  // ===== KSIĘŻYC =====
+  // księżyc
   ctx.fillStyle="#f5f3ce";
   ctx.beginPath();
-  ctx.arc(canvas.width*0.78, 110, 38, 0, Math.PI*2);
+  ctx.arc(GAME_WIDTH*0.78, 110, 38, 0, Math.PI*2);
   ctx.fill();
 
-  // poświata
   ctx.fillStyle="rgba(255,255,200,0.08)";
   ctx.beginPath();
-  ctx.arc(canvas.width*0.78, 110, 80, 0, Math.PI*2);
+  ctx.arc(GAME_WIDTH*0.78, 110, 80, 0, Math.PI*2);
   ctx.fill();
 
-
-  // ===== GWIAZDY =====
+  // gwiazdy
   ctx.fillStyle="white";
   for(let i=0;i<70;i++){
-    let x = (i*97)%canvas.width;
-    let y = (i*53)%canvas.height;
+    let x = (i*97)%GAME_WIDTH;
+    let y = (i*53)%REAL_HEIGHT;
     ctx.fillRect(x,y,2,2);
   }
 
-
-  // ===== CHMURY DALEKIE =====
+  // chmury
   ctx.fillStyle="rgba(255,255,255,0.08)";
   drawCloud(60,180,70);
   drawCloud(260,240,60);
   drawCloud(180,120,55);
 
-
-  // ===== CHMURY BLISKIE =====
   ctx.fillStyle="rgba(255,255,255,0.16)";
   drawCloud(120,330,90);
   drawCloud(280,420,110);
@@ -940,13 +944,13 @@ ctx.fill();
 
   // panel
   ctx.fillStyle="#2a2a2a";
-  ctx.fillRect(0,0,canvas.width,HUD);
+  ctx.fillRect(0,0,GAME_WIDTH,HUD);
 
   ctx.strokeStyle="#111";
   ctx.lineWidth=2;
   ctx.beginPath();
   ctx.moveTo(0,HUD);
-  ctx.lineTo(canvas.width,HUD);
+  ctx.lineTo(GAME_WIDTH, HUD);
   ctx.stroke();
 
   drawCompass();
@@ -957,9 +961,9 @@ let pauseButton = { x:0, y:0, r:18 };
   function drawCompass(){
   let lavaT = getLavaRatio();
 
-  let barW = canvas.width * 0.5;
+  let barW = GAME_WIDTH * 0.5;
   let barH = 6;
-  let barX = canvas.width/2 - barW/2;
+  let barX = GAME_WIDTH/2 - barW/2;
   let barY = HUD - 10;
 
   ctx.fillStyle="#222";
@@ -1000,7 +1004,7 @@ function getCompassAngle(){
 }
 function drawCompassCircle(){
 
-  compass.x = canvas.width - SAFE - 32;
+  compass.x = GAME_WIDTH - SAFE - 32;
   compass.y = HUD/2;
   compass.r = 26;
 
@@ -1065,7 +1069,7 @@ ctx.restore();
 function layoutUI(){
 
   // najpierw pozycja kompasu
-  compass.x = canvas.width - SAFE - 32;
+  compass.x = GAME_WIDTH - SAFE - 32;
   compass.y = HUD/2;
 
   // pauza obok kompasu (z lewej strony)
@@ -1154,7 +1158,7 @@ function drawPauseButton(){
 function draw(){
   layoutUI();
   
- ctx.clearRect(0,0,canvas.width,canvas.height);
+ ctx.clearRect(0,0,GAME_WIDTH,REAL_HEIGHT);
 drawBackground();
   const shake = getScreenShakeOffset();
 
