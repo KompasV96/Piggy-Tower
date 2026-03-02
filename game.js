@@ -882,6 +882,7 @@ function getLookDir(){
 }
   function drawPlayer(){
 
+
   let playerBottom = player.y + player.h;
   let lavaDist = dangerY - playerBottom;
 
@@ -889,8 +890,12 @@ function getLookDir(){
   currentPigColor = pigColor;
 
   const cx = player.x + player.w/2;
-  const cy = player.y + player.h/2;
-  const r = player.w*0.55;
+const cy = player.y + player.h/2;
+const size = player.w * 0.55;
+   
+        const x = cx;
+const y = cy;
+const r = size;
     
     // ===== BOOST AURA =====
 if(boosting || boostAfterglow > 0){
@@ -906,37 +911,44 @@ if(boosting || boostAfterglow > 0){
   ctx.shadowBlur = 0;
 }
 
-  // ===== GŁOWA =====
-  ctx.fillStyle = pigColor;
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI*2);
-  ctx.fill();
-
-  // ===== USZY =====
-  ctx.beginPath();
-  ctx.arc(cx-r*0.55, cy-r*0.65, r*0.35, 0, Math.PI*2);
-  ctx.arc(cx+r*0.55, cy-r*0.65, r*0.35, 0, Math.PI*2);
-  ctx.fill();
-
-  // ===== RYJ =====
-  ctx.fillStyle = "#ffb6c1";
-  ctx.beginPath();
-  ctx.ellipse(cx, cy+r*0.15, r*0.55, r*0.38, 0, 0, Math.PI*2);
-  ctx.fill();
-
-  // nozdrza
-  ctx.fillStyle = "#a05566";
-  ctx.beginPath();
-  ctx.arc(cx-r*0.18, cy+r*0.15, r*0.09, 0, Math.PI*2);
-  ctx.arc(cx+r*0.18, cy+r*0.15, r*0.09, 0, Math.PI*2);
-  ctx.fill();
-
-  // ===== OCZY =====
-  ctx.fillStyle = "white";
-  ctx.beginPath();
-  ctx.arc(cx-r*0.28, cy-r*0.05, r*0.22, 0, Math.PI*2);
-  ctx.arc(cx+r*0.28, cy-r*0.05, r*0.22, 0, Math.PI*2);
-  ctx.fill();
+// ===== CIEŃ ===== 
+    ctx.fillStyle = "rgba(0,0,0,0.25)";
+    ctx.beginPath();
+    ctx.ellipse( x + size*0.15, y + size*0.9, size*0.7, size*0.25, 0, 0, Math.PI*2 );
+    ctx.fill();
+    // ===== GŁOWA (gradient 3D) =====
+    let headGrad = ctx.createRadialGradient( x - size*0.3, y - size*0.4, size*0.1, x, y, size );
+    headGrad.addColorStop(0, "#ffd1dc");
+    headGrad.addColorStop(1, "#ff8fa3");
+    ctx.fillStyle = headGrad;
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, Math.PI*2);
+    ctx.fill();
+    //===== RYJ =====
+    let snoutGrad = ctx.createRadialGradient( x, y + size*0.3, size*0.1, x, y + size*0.3, size*0.6 ); 
+    snoutGrad.addColorStop(0, "#ffb3c1");
+    snoutGrad.addColorStop(1, "#e56b83"); ctx.fillStyle = snoutGrad;
+    ctx.beginPath(); 
+    ctx.ellipse(x, y + size*0.35, size*0.55, size*0.35, 0, 0, Math.PI*2);
+    ctx.fill();
+    // ===== NOSKI ===== 
+    ctx.fillStyle = "#2b2b2b"; 
+    ctx.beginPath(); ctx.arc(x - size*0.18, y + size*0.35, size*0.1, 0, Math.PI*2);
+    ctx.arc(x + size*0.18, y + size*0.35, size*0.1, 0, Math.PI*2); 
+    ctx.fill();
+    // ===== OCZY ===== 
+    ctx.fillStyle = "black";
+    ctx.beginPath(); 
+    ctx.arc(x - size*0.35, y - size*0.25, size*0.14, 0, Math.PI*2);
+    ctx.arc(x + size*0.35, y - size*0.25, size*0.14, 0, Math.PI*2);
+    ctx.fill(); 
+    // ===== POŁYSK W OCZACH ===== 
+    ctx.fillStyle = "white";
+    ctx.beginPath(); 
+    ctx.arc(x - size*0.32, y - size*0.3, size*0.05, 0, Math.PI*2);
+    ctx.arc(x + size*0.32, y - size*0.3, size*0.05, 0, Math.PI*2); 
+    ctx.fill();
+  
     // ===== POWIEKI =====
 if(blink > 0){
   ctx.fillStyle = pigColor;
@@ -947,13 +959,7 @@ if(blink > 0){
   ctx.fillRect(cx+r*0.06, cy-r*0.25, r*0.44, h);
 }
 
-  const look = getLookDir();
 
-ctx.fillStyle = "black";
-ctx.beginPath();
-ctx.arc(cx-r*0.28 + look.x*r, cy-r*0.05 + look.y*r, r*0.10, 0, Math.PI*2);
-ctx.arc(cx+r*0.28 + look.x*r, cy-r*0.05 + look.y*r, r*0.10, 0, Math.PI*2);
-ctx.fill();
 
     ctx.shadowBlur = 0;
   return pigColor;
