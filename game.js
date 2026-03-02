@@ -401,11 +401,18 @@ onGround = false;
 if(left) targetSpeed = -speedKeyboard;
 else if(right) targetSpeed = speedKeyboard;
 else if(touching){
-  let mid = canvas.width/2;
-  let dir = (touchX - mid) / mid;   // -1 do 1
-  targetSpeed = dir * speedTouch;
-}
 
+  let mid = canvas.width/2;
+  let dist = (touchX - mid) / mid; // -1..1
+
+  // martwa strefa (stabilność)
+  if(Math.abs(dist) < 0.08) dist = 0;
+
+  // krzywa responsywności
+  dist = Math.sign(dist) * Math.pow(Math.abs(dist), 0.65);
+
+  targetSpeed = dist * speedTouch * 1.35;
+}
 let control = onGround ? 1 : airControl;
 
 if(boostLockTimer > 0){
