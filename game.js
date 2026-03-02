@@ -824,16 +824,15 @@ function drawCloud(cx, cy, r){
 
   for(let c of coins){
 
-    // puls 0.85 → 1.15
+    // ===== PULS =====
     let pulse = 1 + Math.sin(uiTime*3 + c.x)*0.15;
-
     let r = c.r * pulse;
 
-    // złoty glow
+    // ===== GLOW =====
     ctx.shadowBlur = 18 + Math.sin(uiTime*8 + c.y)*6;
     ctx.shadowColor = "rgba(255,215,0,0.7)";
 
-    // gradient
+    // ===== GRADIENT MONETY =====
     const grad = ctx.createRadialGradient(
       c.x - r*0.4,
       c.y - r*0.4,
@@ -852,13 +851,39 @@ function drawCloud(cx, cy, r){
     ctx.arc(c.x, c.y, r, 0, Math.PI*2);
     ctx.fill();
 
-    // jasny błysk
+    ctx.shadowBlur = 0;
+
+    // ===== SYMBOL $ (OBRÓT + 3D) =====
+    ctx.save();
+    ctx.translate(c.x, c.y);
+
+    // delikatny obrót w czasie
+    let rot = Math.sin(uiTime*2 + c.y) * 0.25;
+    ctx.rotate(rot);
+
+    // cień pod literą
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
+    ctx.font = "bold " + (r * 1.1) + "px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("$", r*0.05, r*0.08);
+
+    // główny kolor
+    ctx.fillStyle = "#5a3b00";
+    ctx.fillText("$", 0, 0);
+
+    // outline arcade
+    ctx.lineWidth = r * 0.08;
+    ctx.strokeStyle = "rgba(255,255,255,0.4)";
+    ctx.strokeText("$", 0, 0);
+
+    ctx.restore();
+
+    // ===== HIGHLIGHT =====
     ctx.fillStyle="rgba(255,255,200,0.7)";
     ctx.beginPath();
     ctx.arc(c.x - r*0.3, c.y - r*0.3, r*0.25, 0, Math.PI*2);
     ctx.fill();
-
-    ctx.shadowBlur = 0;
   }
 }
 function getLookDir(){
