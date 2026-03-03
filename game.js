@@ -1189,7 +1189,7 @@ if(boosting || boostAfterglow > 0){
     ctx.beginPath(); ctx.arc(x - size*0.18, y + size*0.35, size*0.1, 0, Math.PI*2);
     ctx.arc(x + size*0.18, y + size*0.35, size*0.1, 0, Math.PI*2); 
     ctx.fill();
-    // ===== OCZY =====
+// ===== OCZY =====
 
 let panicLevel = 0;
 
@@ -1200,10 +1200,19 @@ if(lavaDist < 200){
 
 let eyeSize = size * (0.16 + panicLevel * 0.18);
 
+let eyeOffsetX = size * 0.35;
+let eyeOffsetY = size * 0.25;
+
+// tilt = agresja
+let tilt = panicLevel * size * 0.12;
+
+// mikro drżenie
+let rageShake = Math.sin(uiTime * 40) * panicLevel * 1.5;
+
 ctx.fillStyle = "black";
 ctx.beginPath();
-ctx.arc(x - size*0.35, y - size*0.25, eyeSize, 0, Math.PI*2);
-ctx.arc(x + size*0.35, y - size*0.25, eyeSize, 0, Math.PI*2);
+ctx.arc(x - eyeOffsetX + rageShake, y - eyeOffsetY - tilt, eyeSize, 0, Math.PI*2);
+ctx.arc(x + eyeOffsetX + rageShake, y - eyeOffsetY + tilt, eyeSize, 0, Math.PI*2);
 ctx.fill();
     // ===== POŁYSK W OCZACH ===== 
     ctx.fillStyle = "white";
