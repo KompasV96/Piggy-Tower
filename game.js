@@ -65,7 +65,7 @@ function getCompassShake(){
   return Math.sin(performance.now()*0.04) * 2 * power;
 }
 function getCompassClickPulse(){
-  if(!boostReady) return 0;
+ if(boostCharges <= 0) return 0;
   return Math.sin(uiTime * 8) * 4 + 4;
 }
 // ---------- GAME STATE --------------------------------------
@@ -139,7 +139,8 @@ let miraclePower = 5 * PLATFORM_GAP; // 5 platform w górę
 let miracleUsed = false;
 
 // BOOST (jednorazowy tryb)
-let boostReady = true;
+let boostCharges = 3;
+const maxBoostCharges = 3;
 let boosting = false;
 
 let boostDuration = 1.1;
@@ -382,15 +383,15 @@ snapCameraToPlayer();
   gameState = "loading";
   loadingTimer = 400;
 
-boostReady = true;
+boostCharges = maxBoostCharges;
 boostLockTimer = 0;
 }
 // ================= UPDATE =================
 function tryBoost(){
 
-  if(!boostReady || gameState!=="play") return;
+  if(boostCharges <= 0 || gameState!=="play") return;
 
-  boostReady = false;
+boostCharges--;
   boosting = true;
   boostTimer = boostDuration;
   boostVisualTime = 0;   // ← START ANIMACJI
@@ -1251,6 +1252,8 @@ const cy = compass.y
   ctx.arc(cx, cy, r*0.15, 0, Math.PI*2);
   ctx.fillStyle = color;
   ctx.fill();
+  
+
 
 // obrót
 let ang = getCompassAngle();
@@ -1270,8 +1273,26 @@ ctx.fillStyle = "#ccc";
 ctx.fill();
 
 ctx.restore();
+
+// ===== BOOST COUNT POD KOMPASEM =====
+ctx.font = "bold 14px Arial";
+ctx.textAlign = "center";
+ctx.textBaseline = "top";
+ctx.save();
+
+if(boostCharges === 0){
+  ctx.fillStyle = "#ff3b3b";
+  ctx.shadowBlur = 10;
+  ctx.shadowColor = "#ff3b3b";
+}else{
+  ctx.fillStyle = "white";
 }
-function layoutUI(){
+
+ctx.fillText(boostCharges, cx, cy + compass.r + 4);
+
+ctx.restore();
+}
+  function layoutUI(){
 
   // najpierw pozycja kompasu
   compass.x = GAME_WIDTH - SAFE - 32;
