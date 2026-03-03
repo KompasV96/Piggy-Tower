@@ -16,7 +16,7 @@ canvas.addEventListener("dragstart", e => e.preventDefault());
 
 function resize(){
 
-  const dpr = window.devicePixelRatio || 1;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
   const viewH = window.visualViewport
     ? window.visualViewport.height
@@ -26,7 +26,6 @@ function resize(){
     ? window.visualViewport.width
     : window.innerWidth;
 
-  // 🔥 PRAWDZIWA widoczna wysokość (naprawa iframe / mobile chrome UI)
   const safeVH = Math.min(viewH, document.documentElement.clientHeight);
 
   const scale = Math.min(
@@ -34,16 +33,14 @@ function resize(){
     safeVH / REAL_HEIGHT
   );
 
-  // CSS rozmiar
   canvas.style.width = GAME_WIDTH * scale + "px";
   canvas.style.height = REAL_HEIGHT * scale + "px";
 
-  // fizyczna rozdzielczość (HD)
   canvas.width  = Math.floor(GAME_WIDTH * dpr);
   canvas.height = Math.floor(REAL_HEIGHT * dpr);
 
-  // 1 jednostka = 1 piksel świata
   ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.imageSmoothingEnabled = false;
 }
 window.addEventListener("resize", resize);
 resize();
@@ -842,7 +839,7 @@ function drawWorld(){
 
   const waveH = 6;
 
-  for(let x=0;x<=canvas.width;x+=6){
+  for(let x=0;x<=GAME_WIDTH;x+=6){
     let y = dangerY + Math.sin(x*0.05 + t*3)*waveH
                       + Math.sin(x*0.12 + t*2)*waveH*0.5;
 
@@ -1294,22 +1291,21 @@ function layoutUI(){
 function drawOverlay(title,sub){
 
   ctx.fillStyle="rgba(0,0,0,0.6)";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-
+  ctx.fillRect(0,0,GAME_WIDTH,REAL_HEIGHT);
   ctx.fillStyle="white";
   ctx.textAlign="center";
 
   ctx.font="50px Arial";
-  ctx.fillText(title,canvas.width/2,canvas.height/2-40);
+  ctx.fillText(title,GAME_WIDTH/2,REAL_HEIGHT/2-40);
 
   ctx.font="25px Arial";
-  ctx.fillText(sub,canvas.width/2,canvas.height/2+20);
-}
+  ctx.fillText(sub,GAME_WIDTH/2,REAL_HEIGHT/2+20);}
 function drawPauseOverlay(){
 
   // przyciemnienie
   ctx.fillStyle="rgba(0,0,0,0.55)";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillRect(0,0,GAME_WIDTH,REAL_HEIGHT);
+
 
   ctx.fillStyle="white";
   ctx.textAlign="center";
@@ -1319,8 +1315,8 @@ function drawPauseOverlay(){
   ctx.fillText("PAUSE",canvas.width/2,canvas.height/2-40);
 
   // play button
-  const cx = canvas.width/2;
-  const cy = canvas.height/2 + 10;
+  const cx = GAME_WIDTH/2;
+  const cy = REAL_HEIGHT/2 + 10;
   const r = 26;
 
   ctx.beginPath();
@@ -1367,7 +1363,7 @@ function draw(){
   layoutUI();
   
  ctx.clearRect(0,0,GAME_WIDTH,REAL_HEIGHT);
-drawBackground();
+ drawBackground();
   const shake = getScreenShakeOffset();
 
   // tylko świat się trzęsie
@@ -1388,7 +1384,7 @@ if(gameState !== "pause")
   // flash na końcu
   if(boostFlash > 0){
     ctx.fillStyle = "rgba(255,255,255," + (boostFlash*0.35) + ")";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillRect(0,0,GAME_WIDTH,REAL_HEIGHT);
   }
 }
 
