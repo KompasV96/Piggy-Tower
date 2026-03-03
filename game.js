@@ -1317,23 +1317,89 @@ ctx.restore();
   
 
 
-function drawOverlay(title,sub){
+function drawOverlay(title, sub){
 
+  // ciemne tło
   ctx.fillStyle = "rgba(0,0,0,0.6)";
   ctx.fillRect(0,0,GAME_WIDTH,REAL_HEIGHT);
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  const cx = GAME_WIDTH / 2;
+  const cy = REAL_HEIGHT / 2 - 40;
+
+  // ================= DEAD =================
   if(gameState === "dead"){
-  ctx.fillStyle = "#ff4b4b";
-}else{
-  ctx.fillStyle = "white";
+
+    ctx.font = "bold 64px Arial";
+
+    // czerwony glow
+    ctx.shadowBlur = 25;
+    ctx.shadowColor = "#ff0000";
+
+    ctx.fillStyle = "#ff1a1a";
+    ctx.fillText("GAME OVER", cx, cy);
+
+    ctx.shadowBlur = 0;
+
+    // outline horror
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "#330000";
+    ctx.strokeText("GAME OVER", cx, cy);
+
+    // ===== HORROR BLOOD DRIP =====
+for(let i = -4; i <= 4; i++){
+
+  let baseX = cx + i * 32;
+
+  // lekki chaos
+  let wobble = Math.sin(uiTime*2 + i*1.3) * 4;
+  let dripX = baseX + wobble;
+
+  // długość zmienna
+  let dripLen = 25 + Math.sin(uiTime*3 + i*2) * 18;
+
+  // szerokość losowa
+  let width = 6 + (Math.sin(i*3.7)*2);
+
+  // kolor główny
+  ctx.fillStyle = "#7a0000";
+
+  ctx.beginPath();
+  ctx.moveTo(dripX - width/2, cy + 8);
+  ctx.lineTo(dripX - width/2, cy + dripLen);
+  ctx.lineTo(dripX + width/2, cy + dripLen);
+  ctx.lineTo(dripX + width/2, cy + 8);
+  ctx.closePath();
+  ctx.fill();
+
+  // okrągła kropla na końcu
+  ctx.beginPath();
+  ctx.arc(dripX, cy + dripLen, width * 0.6, 0, Math.PI*2);
+  ctx.fill();
+
+  // połysk krwi
+  ctx.fillStyle = "rgba(255,80,80,0.25)";
+  ctx.beginPath();
+  ctx.arc(dripX - width*0.2, cy + dripLen - width*0.2, width*0.25, 0, Math.PI*2);
+  ctx.fill();
 }
-  ctx.textAlign="center";
 
-  ctx.font="50px Arial";
-  ctx.fillText(title,GAME_WIDTH/2,REAL_HEIGHT/2-40);
+  }
 
-  ctx.font="25px Arial";
-  ctx.fillText(sub,GAME_WIDTH/2,REAL_HEIGHT/2+20);}
+  // ================= INNE STANY =================
+  else{
+    ctx.font = "50px Arial";
+    ctx.fillStyle = "white";
+    ctx.fillText(title, cx, cy);
+  }
 
+  // ===== SUBTEXT =====
+  ctx.font = "25px Arial";
+  ctx.fillStyle = "white";
+  ctx.fillText(sub, GAME_WIDTH/2, REAL_HEIGHT/2 + 30);
+}
 function drawPauseOverlay(){
 
   ctx.fillStyle="rgba(0,0,0,0.55)";
