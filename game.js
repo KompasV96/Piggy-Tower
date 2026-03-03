@@ -110,6 +110,7 @@ let jumpBuffer = 0.12;     // wciśniesz przed lądowaniem = zadziała
 let jumpBufferTimer = 0;
 let onGround = false;
 let deathSmokeTimer = 0;
+let deathFlash = 0;
 
 // ---------- SCORE ------------------------------------------------
 let worldOffset = 0;
@@ -442,6 +443,7 @@ function updateDanger(dtSec){
   if(player.y + player.h > dangerY){
       gameState = "dead";
     deathSmokeTimer = 1.5;
+    deathFlash = 1;
 
       if(score > bestScore){
           bestScore = score;
@@ -636,6 +638,11 @@ if(shootingStar){
     boostFlash -= dtSec * 6;
     if(boostFlash < 0) boostFlash = 0;
   }
+  if(deathFlash > 0){
+  deathFlash -= dt * 2;   // tempo zanikania
+  if(deathFlash < 0) deathFlash = 0;
+}
+  
   if(deathSmokeTimer > 0){
   deathSmokeTimer -= dtSec;
 }
@@ -822,6 +829,7 @@ function drawWorld(){
   
   ctx.restore();
 }
+
  function drawLava(){
 
   const t = uiTime;
@@ -1311,9 +1319,13 @@ ctx.restore();
 
 function drawOverlay(title,sub){
 
-  ctx.fillStyle="rgba(0,0,0,0.6)";
+  ctx.fillStyle = "rgba(0,0,0,0.6)";
   ctx.fillRect(0,0,GAME_WIDTH,REAL_HEIGHT);
-  ctx.fillStyle="white";
+  if(gameState === "dead"){
+  ctx.fillStyle = "#ff4b4b";
+}else{
+  ctx.fillStyle = "white";
+}
   ctx.textAlign="center";
 
   ctx.font="50px Arial";
@@ -1407,6 +1419,11 @@ if(gameState !== "pause")
     ctx.fillStyle = "rgba(255,255,255," + (boostFlash*0.35) + ")";
     ctx.fillRect(0,0,GAME_WIDTH,REAL_HEIGHT);
   }
+  // flash death
+if(deathFlash > 0){
+  ctx.fillStyle = "rgba(255,0,0," + (deathFlash * 0.6) + ")";
+  ctx.fillRect(0,0,GAME_WIDTH,REAL_HEIGHT);
+}
 }
 
 // ================= LOOP =================
