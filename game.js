@@ -111,6 +111,7 @@ let jumpBufferTimer = 0;
 let onGround = false;
 let deathSmokeTimer = 0;
 let deathFlash = 0;
+let baconMode = false;
 
 // ---------- SCORE ------------------------------------------------
 let worldOffset = 0;
@@ -444,7 +445,8 @@ function updateDanger(dtSec){
       gameState = "dead";
     deathSmokeTimer = 1.5;
     deathFlash = 1;
-
+    baconMode = Math.random() < 0.15; // 15% szansy
+    
       if(score > bestScore){
           bestScore = score;
           localStorage.setItem("piggyBest", bestScore);
@@ -1347,6 +1349,74 @@ function drawOverlay(title, sub){
     ctx.lineWidth = 3;
     ctx.strokeStyle = "#330000";
     ctx.strokeText("GAME OVER", cx, cy);
+    
+    // ===== REALISTIC 3D BACON =====
+if(baconMode){
+
+  let bx = GAME_WIDTH/2;
+  let by = REAL_HEIGHT/2 + 95;
+
+  let wobble = Math.sin(uiTime*2) * 5;
+
+  ctx.save();
+  ctx.translate(bx + wobble, by);
+  ctx.rotate(Math.sin(uiTime*1.5)*0.08);
+
+  const w = 110;
+  const h = 28;
+
+  // ===== falowany kształt =====
+  ctx.beginPath();
+
+  for(let x = -w/2; x <= w/2; x+=4){
+    let wave = Math.sin(x*0.12) * 4;
+    let y = -h/2 + wave;
+    if(x === -w/2) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+
+  for(let x = w/2; x >= -w/2; x-=4){
+    let wave = Math.sin(x*0.12) * 4;
+    let y = h/2 + wave;
+    ctx.lineTo(x, y);
+  }
+
+  ctx.closePath();
+
+  // ===== mięso gradient =====
+  let meatGrad = ctx.createLinearGradient(0, -h/2, 0, h/2);
+  meatGrad.addColorStop(0, "#ff8a8a");
+  meatGrad.addColorStop(0.5, "#ff4d4d");
+  meatGrad.addColorStop(1, "#b30000");
+
+  ctx.fillStyle = meatGrad;
+  ctx.fill();
+
+  // ===== warstwy tłuszczu =====
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = "#ffe9c9";
+  ctx.globalAlpha = 0.9;
+
+  ctx.beginPath();
+  ctx.moveTo(-w/2+8, -2);
+  ctx.lineTo(w/2-8, 0);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(-w/2+15, 6);
+  ctx.lineTo(w/2-15, 8);
+  ctx.stroke();
+
+  ctx.globalAlpha = 1;
+
+  // ===== połysk =====
+  ctx.fillStyle = "rgba(255,255,255,0.2)";
+  ctx.beginPath();
+  ctx.ellipse(0, -6, 35, 6, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  ctx.restore();
+}
 
     // ===== HORROR BLOOD DRIP =====
 for(let i = -4; i <= 4; i++){
