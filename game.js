@@ -120,6 +120,7 @@ let deathSmokeTimer = 0;
 let deathFlash = 0;
 let baconMode = false;
 let baconSpawnTime = 0;
+let deathSlowMo = 0;
 
 // ---------- SCORE ------------------------------------------------
 let worldOffset = 0;
@@ -452,6 +453,7 @@ function updateDanger(dtSec){
   // ===== ŚMIERĆ =====
   if(player.y + player.h > dangerY){
       gameState = "dead";
+    deathSlowMo = 0.12;
     deathSmokeTimer = 1.5;
     deathFlash = 1;
     // MEGA IMPACT
@@ -621,41 +623,55 @@ function updateCoins(){
 }
 function update(dt){
 
-  if(updateState(dt)) return;
+  // ===== CAP DT (anti lag spike) =====
+  if(dt > 50) dt = 50;
 
-  const dtSec = dt/1000;
+  const realDtSec = dt / 1000;
 
-  // ===== ZAWSZE DZIAŁA (nawet w pauzie) =====
-  uiTime += dtSec;
-    // ===== SPAADAJĄCA GWIAZDA TIMER =====
-nextShootingStar -= dtSec;
+  // ===== SLOW MOTION SYSTEM =====
+  let timeScale = 1;
 
-if(nextShootingStar <= 0 && !shootingStar){
+  if(deathSlowMo > 0){
 
-  shootingStar = {
-    x: Math.random() * GAME_WIDTH,
-    y: 50 + Math.random()*120,
-    vx: -400 - Math.random()*200,
-    vy: 200 + Math.random()*100,
-    life: 1.2
-  };
+    let t = deathSlowMo / 0.12;        // 1 → 0
+    timeScale = 0.35 + 0.65*(1 - t);   // płynny powrót do 1
 
-  nextShootingStar = 10 + Math.random()*15;
-}
-
-// ===== UPDATE GWIAZDY =====
-if(shootingStar){
-
-  shootingStar.x += shootingStar.vx * dtSec;
-  shootingStar.y += shootingStar.vy * dtSec;
-  shootingStar.life -= dtSec;
-
-  if(shootingStar.life <= 0){
-    shootingStar = null;
+    deathSlowMo -= realDtSec;
+    if(deathSlowMo < 0) deathSlowMo = 0;
   }
-}
+
+  const dtScaled = dt * timeScale;
+  const dtSec = dtScaled / 1000;
+
+  // ===== LOADING STATE =====
+  if(updateState(dtScaled)) return;
+
+  // ===== ZAWSZE DZIAŁA (UI / FX) =====
+  uiTime += realDtSec;  // UI nie spowalniamy
+
+  // spadająca gwiazda timer
+  nextShootingStar -= realDtSec;
+
+  if(nextShootingStar <= 0 && !shootingStar){
+    shootingStar = {
+      x: Math.random() * GAME_WIDTH,
+      y: 50 + Math.random()*120,
+      vx: -400 - Math.random()*200,
+      vy: 200 + Math.random()*100,
+      life: 1.2
+    };
+    nextShootingStar = 10 + Math.random()*15;
+  }
+
+  if(shootingStar){
+    shootingStar.x += shootingStar.vx * realDtSec;
+    shootingStar.y += shootingStar.vy * realDtSec;
+    shootingStar.life -= realDtSec;
+    if(shootingStar.life <= 0) shootingStar = null;
+  }
+
   // blink
-  blinkTimer += dtSec;
+  blinkTimer += realDtSec;
 
   if(blinkTimer > nextBlink){
     blink = 1;
@@ -669,52 +685,56 @@ if(shootingStar){
 
   // efekty wizualne
   if(screenShakeTime > 0){
-    screenShakeTime -= dtSec;
+    screenShakeTime -= realDtSec;
     if(screenShakeTime < 0) screenShakeTime = 0;
   }
 
   if(boostFlash > 0){
-    boostFlash -= dtSec * 6;
+    boostFlash -= realDtSec * 6;
     if(boostFlash < 0) boostFlash = 0;
   }
+
   if(deathFlash > 0){
-  deathFlash -= dt * 2;   // tempo zanikania
-  if(deathFlash < 0) deathFlash = 0;
-}
-  
+    deathFlash -= realDtSec * 2;
+    if(deathFlash < 0) deathFlash = 0;
+  }
+
   if(deathSmokeTimer > 0){
-  deathSmokeTimer -= dtSec;
-}
+    deathSmokeTimer -= realDtSec;
+  }
+
   if(gameState === "dead" && baconMode){
-  baconSpawnTime += dt/1000;
-}
+    baconSpawnTime += realDtSec;
+  }
+
   if(lavaSplash){
-  lavaSplash.time += dt/1000;
+    lavaSplash.time += realDtSec;
 
-  for(let p of lavaSplash.particles){
-    p.vy += 900 * dt/1000; // grawitacja
-    p.life -= dt/1000;
+    for(let p of lavaSplash.particles){
+      p.vy += 900 * realDtSec;
+      p.life -= realDtSec;
+    }
+
+    lavaSplash.particles =
+      lavaSplash.particles.filter(p => p.life > 0);
+
+    if(lavaSplash.time > 1.2){
+      lavaSplash = null;
+    }
   }
 
-  lavaSplash.particles = lavaSplash.particles.filter(p=>p.life>0);
-
-  if(lavaSplash.time > 1.2){
-    lavaSplash = null;
-  }
-}
-
-  // ===== TU ZATRZYMUJEMY ŚWIAT =====
+  // ===== STOP WORLD WHEN NOT PLAYING =====
   if(gameState !== "play") return;
 
-  // ===== FIZYKA GRY =====
+  // ===== GAME LOGIC (SPALNIA SIĘ W SLOWMO) =====
   updateMusic(dtSec);
-  updatePlayer(dt, dtSec);
-  updatePlatforms(dt);
+  updatePlayer(dtScaled, dtSec);
+  updatePlatforms(dtScaled);
   updateCoins();
   recyclePlatforms();
   updateScore();
   updateDanger(dtSec);
-}
+} 
 
 function getRainbowColor(t){
   let a = t * Math.PI * 6; // ile zmian koloru w trakcie boosta
