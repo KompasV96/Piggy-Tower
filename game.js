@@ -109,6 +109,7 @@ let maxFall = 1400;
 let speedKeyboard = 600;
 let speedTouch = 400;
 // FLOW
+let lavaSplash = null;
 let airControl = 0.55;     // sterowanie w powietrzu
 let coyoteTime = 0.08;     // można skoczyć chwilę po zejściu
 let coyoteTimer = 0;
@@ -461,6 +462,22 @@ function updateDanger(dtSec){
     vibrate([120, 40, 90]);
     baconMode = Math.random() < 0.15; // 15% szansy
     baconSpawnTime = 0; // reset animacji
+    // LAVA SPLASH
+lavaSplash = {
+  x: player.x + player.w/2,
+  y: dangerY,
+  time: 0,
+  particles: []
+};
+
+// generuj cząstki
+for(let i=0;i<20;i++){
+  lavaSplash.particles.push({
+    vx: (Math.random()*2-1) * 200,
+    vy: -Math.random()*400 - 100,
+    life: 0.8 + Math.random()*0.4
+  });
+}
   
 
     
@@ -671,6 +688,20 @@ if(shootingStar){
   if(gameState === "dead" && baconMode){
   baconSpawnTime += dt/1000;
 }
+  if(lavaSplash){
+  lavaSplash.time += dt/1000;
+
+  for(let p of lavaSplash.particles){
+    p.vy += 900 * dt/1000; // grawitacja
+    p.life -= dt/1000;
+  }
+
+  lavaSplash.particles = lavaSplash.particles.filter(p=>p.life>0);
+
+  if(lavaSplash.time > 1.2){
+    lavaSplash = null;
+  }
+}
 
   // ===== TU ZATRZYMUJEMY ŚWIAT =====
   if(gameState !== "play") return;
@@ -846,6 +877,7 @@ function drawWorld(){
   ctx.translate(0, HUD);
 
   drawLava();
+  drawLavaSplash();
   drawPlatforms();
   drawCoins();
   drawPlayer();
@@ -855,7 +887,39 @@ function drawWorld(){
   ctx.restore();
 }
 
- function drawLava(){
+function drawLavaSplash(){
+
+  if(!lavaSplash) return;
+
+  const s = lavaSplash;
+
+  // ===== RIPPLE =====
+  let rippleSize = s.time * 180;
+  let alpha = 1 - s.time;
+
+  ctx.strokeStyle = "rgba(255,120,0,"+alpha+")";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(s.x, s.y+5, rippleSize, 0, Math.PI*2);
+  ctx.stroke();
+
+  // ===== CZĄSTKI =====
+  for(let p of s.particles){
+
+    ctx.fillStyle = "rgba(255,80,0,"+p.life+")";
+    ctx.beginPath();
+    ctx.arc(
+      s.x + p.vx * s.time,
+      s.y + p.vy * s.time,
+      5,
+      0,
+      Math.PI*2
+    );
+    ctx.fill();
+  }
+}
+
+function drawLava(){
 
   const t = uiTime;
 
