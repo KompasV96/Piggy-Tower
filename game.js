@@ -1300,42 +1300,42 @@ function drawOverlay(title,sub){
 
   ctx.font="25px Arial";
   ctx.fillText(sub,GAME_WIDTH/2,REAL_HEIGHT/2+20);}
+
 function drawPauseOverlay(){
 
-  // przyciemnienie
   ctx.fillStyle="rgba(0,0,0,0.55)";
   ctx.fillRect(0,0,GAME_WIDTH,REAL_HEIGHT);
-
 
   ctx.fillStyle="white";
   ctx.textAlign="center";
 
+  const cx = GAME_WIDTH/2;
+  const cy = REAL_HEIGHT/2;
+
   // tytuł
   ctx.font="50px Arial";
-  ctx.fillText("PAUSE",canvas.width/2,canvas.height/2-40);
+  ctx.fillText("PAUSE",cx,cy-60);
 
-  // play button
-  const cx = GAME_WIDTH/2;
-  const cy = REAL_HEIGHT/2 + 10;
-  const r = 26;
+  // przycisk play
+  const r = 32;
 
   ctx.beginPath();
   ctx.arc(cx,cy,r,0,Math.PI*2);
-  ctx.strokeStyle="white";
   ctx.lineWidth=3;
+  ctx.strokeStyle="white";
   ctx.stroke();
 
   // trójkąt ▶
   ctx.beginPath();
-  ctx.moveTo(cx-6,cy-10);
-  ctx.lineTo(cx-6,cy+10);
-  ctx.lineTo(cx+12,cy);
+  ctx.moveTo(cx-8,cy-14);
+  ctx.lineTo(cx-8,cy+14);
+  ctx.lineTo(cx+16,cy);
   ctx.closePath();
   ctx.fill();
 
   // tekst
-  ctx.font="22px Arial";
-  ctx.fillText("tap anywhere to continue",canvas.width/2,cy+50);
+  ctx.font="20px Arial";
+  ctx.fillText("tap anywhere to continue",cx,cy+60);
 }
 
  
