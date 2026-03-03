@@ -112,6 +112,7 @@ let onGround = false;
 let deathSmokeTimer = 0;
 let deathFlash = 0;
 let baconMode = false;
+let baconSpawnTime = 0;
 
 // ---------- SCORE ------------------------------------------------
 let worldOffset = 0;
@@ -446,6 +447,9 @@ function updateDanger(dtSec){
     deathSmokeTimer = 1.5;
     deathFlash = 1;
     baconMode = Math.random() < 0.15; // 15% szansy
+    baconSpawnTime = 0; // reset animacji
+  
+
     
       if(score > bestScore){
           bestScore = score;
@@ -647,6 +651,9 @@ if(shootingStar){
   
   if(deathSmokeTimer > 0){
   deathSmokeTimer -= dtSec;
+}
+  if(gameState === "dead" && baconMode){
+  baconSpawnTime += dt/1000;
 }
 
   // ===== TU ZATRZYMUJEMY ŚWIAT =====
@@ -1354,7 +1361,13 @@ function drawOverlay(title, sub){
 if(baconMode){
 
   let bx = GAME_WIDTH/2;
-  let by = REAL_HEIGHT/2 + 95;
+  let targetY = REAL_HEIGHT/2 + 95;
+
+// animacja spadania + bounce
+let drop = Math.min(baconSpawnTime * 600, 140);
+let bounce = Math.sin(Math.min(baconSpawnTime*6, Math.PI)) * 12;
+
+let by = targetY - 140 + drop - bounce;
 
   let wobble = Math.sin(uiTime*2) * 5;
 
@@ -1364,6 +1377,10 @@ if(baconMode){
 
   const w = 110;
   const h = 28;
+  ctx.fillStyle = "rgba(0,0,0,0.35)";
+ctx.beginPath();
+ctx.ellipse(0, 18, 40, 8, 0, 0, Math.PI*2);
+ctx.fill();
 
   // ===== falowany kształt =====
   ctx.beginPath();
@@ -1414,6 +1431,13 @@ if(baconMode){
   ctx.beginPath();
   ctx.ellipse(0, -6, 35, 6, 0, 0, Math.PI*2);
   ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,0.15)";
+for(let i=0;i<3;i++){
+  let steamY = -20 - i*8 - Math.sin(uiTime*2+i)*3;
+  ctx.beginPath();
+  ctx.arc(-20 + i*20, steamY, 6, 0, Math.PI*2);
+  ctx.fill();
+}
 
   ctx.restore();
 }
