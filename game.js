@@ -56,6 +56,12 @@ function getPointerPos(e){
     y: (e.clientY - rect.top)  * scaleY
   };
 }
+function vibrate(ms){
+  if(navigator.vibrate){
+    navigator.vibrate(ms);
+  }
+}
+
 function getCompassShake(){
   let t = getLavaRatio();
 
@@ -362,8 +368,8 @@ function snapCameraToPlayer(){
 
 function resetGame(){
   
- player.x = GAME_WIDTH/2 - 15;
-player.y = REAL_HEIGHT - 120;
+  player.x = GAME_WIDTH/2 - 15;
+  player.y = REAL_HEIGHT - 120;
   player.vx = 0;
   player.vy = 0;
   player.lastY = player.y;
@@ -382,19 +388,19 @@ player.y = REAL_HEIGHT - 120;
 
   initPlatforms();   // ← jedyne miejsce generacji monet
   coinScore = 0;
-snapCameraToPlayer();
+  snapCameraToPlayer();
   gameState = "loading";
   loadingTimer = 400;
 
-boostCharges = maxBoostCharges;
-boostLockTimer = 0;
-}
+  boostCharges = maxBoostCharges;
+  boostLockTimer = 0;
+  }
 // ================= UPDATE =================
 function tryBoost(){
 
   if(boostCharges <= 0 || gameState!=="play") return;
 
-boostCharges--;
+  boostCharges--;
   boosting = true;
   boostTimer = boostDuration;
   boostVisualTime = 0;   // ← START ANIMACJI
@@ -404,8 +410,9 @@ boostCharges--;
   player.vy = -900;
 
   boostLockTimer = boostControlLock;
-  screenShakeTime = 0.22;   // ile trwa
-screenShakePower = 26;    // siła
+  screenShakeTime = 0.40;   // ile trwa
+  screenShakePower = 50;    // siła
+  vibrate(40);
   boostFlash = 1;
 }
 
@@ -446,6 +453,12 @@ function updateDanger(dtSec){
       gameState = "dead";
     deathSmokeTimer = 1.5;
     deathFlash = 1;
+    // MEGA IMPACT
+    screenShakeTime = 0.45;
+    screenShakePower = 55;
+
+    // wibracja pattern: krótka-mocna-przerwa-krótka
+    vibrate([120, 40, 90]);
     baconMode = Math.random() < 0.15; // 15% szansy
     baconSpawnTime = 0; // reset animacji
   
@@ -540,7 +553,10 @@ function updatePlatforms(dt){
        player.x+player.w>p.x){
 
         player.y = p.y - player.h;
-player.vy = jumpPower;
+        player.vy = jumpPower;
+      // micro impact
+      screenShakeTime = 0.08;
+      screenShakePower = 8;
 
 onGround = true;
 coyoteTimer = coyoteTime;
@@ -679,15 +695,15 @@ function getRainbowColor(t){
 function getScreenShakeOffset(){
   if(screenShakeTime <= 0) return {x:0,y:0};
 
-  const DURATION = 0.22;
-  let t = 1 - (screenShakeTime / DURATION); // ODWRÓCONE
+  const DURATION = 0.45;
+  let t = 1 - (screenShakeTime / DURATION);
 
-  // mocny start → szybki zanik
+  // mocny start, szybki fade
   let intensity = screenShakePower * (1 - t*t*t);
 
   return {
     x: (Math.random()*2-1) * intensity,
-    y: (Math.random()*2-1) * intensity * 0.6
+    y: (Math.random()*2-1) * intensity * 0.7
   };
 }
 
