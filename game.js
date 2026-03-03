@@ -115,6 +115,8 @@ let coyoteTime = 0.08;     // można skoczyć chwilę po zejściu
 let coyoteTimer = 0;
 let jumpBuffer = 0.12;     // wciśniesz przed lądowaniem = zadziała
 let jumpBufferTimer = 0;
+let squash = 0;          // aktualne wgniatanie
+let squashVel = 0;       // prędkość sprężyny
 let onGround = false;
 let deathSmokeTimer = 0;
 let deathFlash = 0;
@@ -406,6 +408,7 @@ function tryBoost(){
   boosting = true;
   boostTimer = boostDuration;
   boostVisualTime = 0;   // ← START ANIMACJI
+  
 
   // lekki startowy kop
   if(player.vy > 0) player.vy *= 0.3;
@@ -416,6 +419,7 @@ function tryBoost(){
   screenShakePower = 50;    // siła
   vibrate(40);
   boostFlash = 1;
+  squashVel = -18;
 }
 
 function updateState(dt){
@@ -573,6 +577,8 @@ function updatePlatforms(dt){
 
         player.y = p.y - player.h;
         player.vy = jumpPower;
+      // zwykły splash sadła
+      squashVel = -8;
       // micro impact
       screenShakeTime = 0.08;
       screenShakePower = 8;
@@ -725,6 +731,13 @@ function update(dt){
 
   // ===== STOP WORLD WHEN NOT PLAYING =====
   if(gameState !== "play") return;
+  // ===== SPRĘŻYNA SADŁA =====
+  let spring = 120;
+  let damping = 14;
+
+  squashVel += (-squash * spring) * dtSec;
+  squashVel -= squashVel * damping * dtSec;
+  squash += squashVel * dtSec;
 
   // ===== GAME LOGIC (SPALNIA SIĘ W SLOWMO) =====
   updateMusic(dtSec);
@@ -1121,12 +1134,21 @@ function getLookDir(){
   currentPigColor = pigColor;
 
   const cx = player.x + player.w/2;
-const cy = player.y + player.h/2;
-const size = player.w * 0.55;
+  const cy = player.y + player.h/2;
+  const baseSize = player.w * 0.55;
+const scaleY = 1 + squash;
+const scaleX = 1 - squash * 0.6;
+
+ctx.save();
+ctx.translate(cx, cy);
+ctx.scale(scaleX, scaleY);
+
+const x = 0;
+const y = 0;
+const size = baseSize;
    
-        const x = cx;
-const y = cy;
-const r = size;
+  
+  const r = size;
     
     // ===== BOOST AURA =====
 if(boosting || boostAfterglow > 0){
@@ -1196,13 +1218,15 @@ if(blink > 0){
 
   const h = r*0.25 * blink;
 
-  ctx.fillRect(cx-r*0.5, cy-r*0.25, r*0.44, h);
-  ctx.fillRect(cx+r*0.06, cy-r*0.25, r*0.44, h);
+  ctx.fillRect(x - r*0.5, y - r*0.25, r*0.44, h);
+  ctx.fillRect(x + r*0.06, y - r*0.25, r*0.44, h);
 }
     
 
 
     ctx.shadowBlur = 0;
+    
+    ctx.restore();
   return pigColor;
 }
 function drawDeathSmoke(){
