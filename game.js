@@ -181,8 +181,8 @@ let shootingStar = null;
 let nextShootingStar = 5 + Math.random()*8; // pierwsza za kilka sekund
 function createPlatform(y){
 
-  const minW = GAME_WIDTH * 0.18;   // mała
-  const maxW = GAME_WIDTH * 0.32;   // duża
+  const minW = GAME_WIDTH * 0.14   // mała
+  const maxW = GAME_WIDTH * 0.36   // duża
 
   let w = minW + Math.random()*(maxW - minW);
   let x = Math.random()*(GAME_WIDTH - w);
@@ -368,23 +368,6 @@ function spawnInitialCoins(){
   }
 }
 
-function snapCameraToPlayer(){
-
-  // chcemy aby gracz był ~65% wysokości ekranu
-  const targetY = REAL_HEIGHT * 0.65;
-
-  const diff = targetY - player.y;
-
-  if(diff === 0) return;
-
-  worldOffset -= diff;
-
-  for(let p of platforms) p.y -= diff;
-  for(let c of coins) c.y -= diff;
-  dangerY -= diff;
-
-  player.y = targetY;
-}
 
 function resetGame(){
 
@@ -408,7 +391,6 @@ function resetGame(){
 
   initPlatforms();   // ← jedyne miejsce generacji monet
   coinScore = 0;
-  snapCameraToPlayer();
   gameState = "loading";
   loadingTimer = 400;
 
