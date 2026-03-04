@@ -106,7 +106,7 @@ let boostButton = {
   r: 28
 };
 const pigImg = new Image();
-pigImg.src = "assets/pig.png";
+pigImg.src = "pig.png";
 // ---------- PHYSICS ----------------------------------------------
 let gravity = 2400;
 let jumpPower = -1000;
@@ -1640,3 +1640,4 @@ function loop(now){
 
 
 requestAnimationFrame(loop);
+
