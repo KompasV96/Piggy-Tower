@@ -1176,6 +1176,24 @@ if(boosting || boostAfterglow > 0){
     ctx.beginPath();
     ctx.arc(x, y, size, 0, Math.PI*2);
     ctx.fill();
+    // ===== USZY =====
+
+
+// lewe
+    ctx.fillStyle = "#ffb3c1";
+ctx.beginPath();
+ctx.moveTo(x - size*0.7, y - size*0.4);
+ctx.lineTo(x - size*0.7, y - size*1.2);
+ctx.lineTo(x - size*0.15, y - size*0.95); 
+ctx.fill();
+
+// prawe
+    ctx.fillStyle = "#ffb3c1";
+ctx.beginPath();
+ctx.moveTo(x + size*0.7, y - size*0.4);
+ctx.lineTo(x + size*0.7, y - size*1.2);
+ctx.lineTo(x + size*0.15, y - size*0.95);
+ctx.fill();
     //===== RYJ =====
     let snoutGrad = ctx.createRadialGradient( x, y + size*0.3, size*0.1, x, y + size*0.3, size*0.6 ); 
     snoutGrad.addColorStop(0, "#ffb3c1");
