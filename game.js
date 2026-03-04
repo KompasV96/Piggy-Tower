@@ -45,6 +45,7 @@ function resize(){
 window.addEventListener("resize", resize);
 resize();
 
+
 function getPointerPos(e){
   const rect = canvas.getBoundingClientRect();
 
@@ -75,14 +76,16 @@ function getCompassClickPulse(){
   return Math.sin(uiTime * 8) * 4 + 4;
 }
 // ---------- GAME STATE --------------------------------------
-let gameState = "start"; 
+let gameState = "start";
 // start | play | pause | dead | loading
 let loadingTimer = 0;
 // ---------- AUDIO ----------
-const music = new Audio("audio/techno_loop.mp3");
+let music = new Audio("audio/techno_loop.mp3");
 music.loop = true;
-music.volume = 0;     // start cisza
+music.volume = 0.6;
+music.preload = "auto";
 let musicStarted = false;
+
 
 // ---------- PLAYER ----------------------------------------------
 let player = {
@@ -236,7 +239,7 @@ function recyclePlatforms(){
       p.w = np.w;
 
       // 💰 spawn monety NA NOWEJ platformie
-   
+
       if(Math.random() < 0.4){
         coins.push({
           x: p.x + Math.random() * (p.w - 20),
@@ -273,7 +276,21 @@ document.addEventListener("keyup", e=>{
 let touching = false;
 let touchX = 0;
 
-canvas.addEventListener("pointerdown", e=>{
+canvas.addEventListener("pointerdown", e => {
+
+  if(!musicStarted){
+    music.play()
+      .then(() => {
+        musicStarted = true;
+        console.log("MUSIC OK");
+      })
+      .catch(err => {
+        console.log("MUSIC ERROR", err);
+      });
+  }
+
+
+
   layoutUI();
   e.preventDefault();
 
@@ -285,10 +302,9 @@ canvas.addEventListener("pointerdown", e=>{
     gameState="play";
     return;
   }
- if(!musicStarted){
-  music.play().catch(() => {});
-  musicStarted = true;
-}
+
+
+
 
   if(gameState==="start"){ gameState="play"; return; }
   if(gameState==="dead"){ resetGame(); return; }
@@ -371,7 +387,7 @@ function snapCameraToPlayer(){
 }
 
 function resetGame(){
-  
+
   player.x = GAME_WIDTH/2 - 15;
   player.y = REAL_HEIGHT - 120;
   player.vx = 0;
@@ -408,7 +424,7 @@ function tryBoost(){
   boosting = true;
   boostTimer = boostDuration;
   boostVisualTime = 0;   // ← START ANIMACJI
-  
+
 
   // lekki startowy kop
   if(player.vy > 0) player.vy *= 0.3;
@@ -484,9 +500,9 @@ for(let i=0;i<20;i++){
     life: 0.8 + Math.random()*0.4
   });
 }
-  
 
-    
+
+
       if(score > bestScore){
           bestScore = score;
           localStorage.setItem("piggyBest", bestScore);
@@ -609,7 +625,7 @@ function updateCoins(){
 
     let c = coins[i];
 
-   
+
 
     // kolizja
     if(player.x < c.x + c.r &&
@@ -740,14 +756,14 @@ function update(dt){
   squash += squashVel * dtSec;
 
   // ===== GAME LOGIC (SPALNIA SIĘ W SLOWMO) =====
-  updateMusic(dtSec);
+
   updatePlayer(dtScaled, dtSec);
   updatePlatforms(dtScaled);
   updateCoins();
   recyclePlatforms();
   updateScore();
   updateDanger(dtSec);
-} 
+}
 
 function getRainbowColor(t){
   let a = t * Math.PI * 6; // ile zmian koloru w trakcie boosta
@@ -795,24 +811,7 @@ function getLavaRatio(){
 
   return t;
 }
-function updateMusic(dtSec){
 
-if(gameState !== "play"){
-  music.volume += (0 - music.volume) * 2 * dtSec;
-  return;
-}
-
-  // im bliżej lawy tym głośniej
-  let t = getLavaRatio(); // 0..1
-
-  // krzywa napięcia
-  let target = 0.25 + Math.pow(t, 2) * 0.65;
-
-  // płynne przejście
-  music.volume += (target - music.volume) * 1.5 * dtSec;
-
-  if(music.volume < 0.001) music.volume = 0;
-}
 
 function drawBackground(){
 
