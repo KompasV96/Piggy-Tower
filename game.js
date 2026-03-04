@@ -1122,8 +1122,14 @@ function getLookDir(){
   ctx.translate(cx, cy);
   ctx.scale(scaleX, scaleY);
 
-  const size = player.w * 3;
+  const size = player.w * 2,4;
 
+
+ctx.shadowColor = "rgba(0,0,0,0.35)";
+ctx.shadowBlur = 12;
+ctx.shadowOffsetY = 6;
+
+   
   ctx.drawImage(
     pigImg,
     -size/2,
@@ -1640,5 +1646,6 @@ function loop(now){
 
 
 requestAnimationFrame(loop);
+
 
 
