@@ -40,7 +40,7 @@ function resize(){
   canvas.height = Math.floor(REAL_HEIGHT * dpr);
 
   ctx.setTransform(dpr,0,0,dpr,0,0);
-  ctx.imageSmoothingEnabled = false;
+ ctx.imageSmoothingEnabled = true;
 }
 window.addEventListener("resize", resize);
 resize();
@@ -1122,7 +1122,7 @@ function getLookDir(){
   ctx.translate(cx, cy);
   ctx.scale(scaleX, scaleY);
 
-  const size = player.w * 2;
+  const size = player.w * 3;
 
   ctx.drawImage(
     pigImg,
@@ -1640,4 +1640,5 @@ function loop(now){
 
 
 requestAnimationFrame(loop);
+
 
