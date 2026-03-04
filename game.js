@@ -1122,7 +1122,7 @@ function getLookDir(){
   ctx.translate(cx, cy);
   ctx.scale(scaleX, scaleY);
 
-  const size = player.w * 1,5;
+  const size = player.w * 2.4;
 
 
 ctx.shadowColor = "rgba(0,0,0,0.35)";
@@ -1646,6 +1646,7 @@ function loop(now){
 
 
 requestAnimationFrame(loop);
+
 
 
 
