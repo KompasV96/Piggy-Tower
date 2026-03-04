@@ -878,14 +878,7 @@ if(shootingStar){
   ctx.restore();
 }
 }
-function drawCloud(x,y,s){
-  ctx.beginPath();
-  ctx.arc(x,y,s*0.5,0,Math.PI*2);
-  ctx.arc(x+s*0.6,y+5,s*0.45,0,Math.PI*2);
-  ctx.arc(x-s*0.6,y+8,s*0.4,0,Math.PI*2);
-  ctx.arc(x,y+15,s*0.55,0,Math.PI*2);
-  ctx.fill();
-}
+
   // ====== WORLD ======
  
 function drawWorld(){
@@ -1122,7 +1115,7 @@ function getLookDir(){
   ctx.translate(cx, cy);
   ctx.scale(scaleX, scaleY);
 
-  const size = player.w * 2.4;
+  const size = player.w * 1.5;
 
 
 ctx.shadowColor = "rgba(0,0,0,0.35)";
@@ -1271,9 +1264,7 @@ function drawCompassCircle(){
 
   const shake = getCompassShake();
 const cx = compass.x + shake;
-const cy = compass.y
-
-;
+const cy = compass.y;
 
   let lavaDist = dangerY - (player.y + player.h);
 
@@ -1646,6 +1637,7 @@ function loop(now){
 
 
 requestAnimationFrame(loop);
+
 
 
 
