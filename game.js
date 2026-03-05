@@ -127,6 +127,7 @@ let deathFlash = 0;
 let baconMode = false;
 let baconSpawnTime = 0;
 let deathSlowMo = 0;
+let dustParticles = [];
 
 // ---------- SCORE ------------------------------------------------
 let worldOffset = 0;
@@ -207,6 +208,21 @@ platforms.push({
 
   spawnInitialCoins();
 }
+
+function spawnDust(x, y){
+  for(let i = 0; i < 4; i++){
+    dustParticles.push({
+      x: x,
+      y: y,
+      vx: (Math.random()-0.5)*2,
+      vy: -Math.random()*2,
+      size: 4 + Math.random()*3,
+      life: 20
+    });
+  }
+}
+
+
 function initStars(){
   stars = [];
 
@@ -578,6 +594,8 @@ function updatePlatforms(dt){
         player.vy = jumpPower;
       // zwykły splash sadła
       squashVel = -8;
+      //kurz przy lądowaniu
+      spawnDust(player.x + player.w/2, player.y + player.h);
       // micro impact
       screenShakeTime = 0.08;
       screenShakePower = 8;
@@ -588,6 +606,15 @@ coyoteTimer = coyoteTime;
 break;
     }
   }
+  
+dustParticles.forEach(p=>{
+  p.x += p.vx;
+  p.y += p.vy;
+  p.vy += 0.1;
+  p.life--;
+});
+
+dustParticles = dustParticles.filter(p=>p.life>0);
 
   // ===== KAMERA =====
   if(player.y < REAL_HEIGHT/2){
@@ -896,11 +923,13 @@ function drawWorld(){
   drawPlatforms();
   drawCoins();
   drawPlayer();
+  drawDust();
   drawPanicBubble();
   drawDeathSmoke();
   
   ctx.restore();
 }
+
 
 function drawLavaSplash(){
 
@@ -1021,6 +1050,21 @@ function drawCloud(cx, cy, r){
     drawCloud(cx-r*0.3, cy-r*0.25, r*0.6);
   }
 }
+function drawDust(){
+
+  for(let p of dustParticles){
+
+    ctx.globalAlpha = p.life/20;
+
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.globalAlpha = 1;
+  }
+}
+
   function drawCoins(){
 
   for(let c of coins){
@@ -1119,8 +1163,9 @@ function getLookDir(){
   const cx = player.x + player.w/2;
   const cy = player.y + player.h/2;
   const baseSize = player.w * 0.65;
-const scaleY = 1 + squash;
-const scaleX = 1 - squash * 0.6;
+  let idle = Math.sin(performance.now()*0.005) * 0.02;  
+  const scaleY = 1 + squash + idle;
+  const scaleX = 1 - squash * 0.6;
 
 ctx.save();
 ctx.translate(cx, cy);
@@ -1258,6 +1303,7 @@ ctx.stroke();
     ctx.restore();
   return pigColor;
 }
+
 function drawDeathSmoke(){
 
   if(gameState !== "dead" || deathSmokeTimer <= 0) return;
