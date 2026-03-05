@@ -40,7 +40,7 @@ function resize(){
   canvas.height = Math.floor(REAL_HEIGHT * dpr);
 
   ctx.setTransform(dpr,0,0,dpr,0,0);
- ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingEnabled = false;
 }
 window.addEventListener("resize", resize);
 resize();
@@ -105,8 +105,7 @@ let boostButton = {
   y: 0,
   r: 28
 };
-const pigImg = new Image();
-pigImg.src = "pig.png";
+
 // ---------- PHYSICS ----------------------------------------------
 let gravity = 2400;
 let jumpPower = -1000;
@@ -878,7 +877,14 @@ if(shootingStar){
   ctx.restore();
 }
 }
-
+function drawCloud(x,y,s){
+  ctx.beginPath();
+  ctx.arc(x,y,s*0.5,0,Math.PI*2);
+  ctx.arc(x+s*0.6,y+5,s*0.45,0,Math.PI*2);
+  ctx.arc(x-s*0.6,y+8,s*0.4,0,Math.PI*2);
+  ctx.arc(x,y+15,s*0.55,0,Math.PI*2);
+  ctx.fill();
+}
   // ====== WORLD ======
  
 function drawWorld(){
@@ -1101,39 +1107,157 @@ function getLookDir(){
   return {x, y};
 }
 
-function drawPlayer(){
+  function drawPlayer(){
 
-  if(!pigImg.complete) return;
+
+  let playerBottom = player.y + player.h;
+  let lavaDist = dangerY - playerBottom;
+
+  const pigColor = "#ff9ecb";
+  currentPigColor = pigColor;
 
   const cx = player.x + player.w/2;
   const cy = player.y + player.h/2;
+  const baseSize = player.w * 0.65;
+const scaleY = 1 + squash;
+const scaleX = 1 - squash * 0.6;
 
-  const scaleY = 1 + squash;
-  const scaleX = 1 - squash * 0.6;
+ctx.save();
+ctx.translate(cx, cy);
+ctx.scale(scaleX, scaleY);
 
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.scale(scaleX, scaleY);
+const x = 0;
+const y = 0;
+const size = baseSize;
+   
+  
+  const r = size;
+    
+    // ===== BOOST AURA =====
+if(boosting || boostAfterglow > 0){
 
- const size = player.w * 3;
+  let t = boosting
+    ? boostVisualTime
+    : 1 - (boostAfterglow / BOOST_AFTERGLOW_TIME);
 
-  ctx.shadowColor = "rgba(0,0,0,0.35)";
-  ctx.shadowBlur = 12;
-  ctx.shadowOffsetY = 6;
+  ctx.shadowBlur = 30;
+  ctx.shadowColor = getRainbowColor(t);
 
-  ctx.drawImage(
-    pigImg,
-    -size/3,
-    -size/3,
-    size,
-    size
-  );
+}else{
+  ctx.shadowBlur = 0;
+}
 
-  ctx.restore();
+// ===== CIEŃ ===== 
+    ctx.fillStyle = "rgba(0,0,0,0.25)";
+    ctx.beginPath();
+    ctx.ellipse( x + size*0.15, y + size*0.9, size*0.7, size*0.25, 0, 0, Math.PI*2 );
+    ctx.fill();
+    // ===== GŁOWA (gradient 3D) =====
+    let headGrad = ctx.createRadialGradient( x - size*0.3, y - size*0.4, size*0.1, x, y, size );
+    headGrad.addColorStop(0, "#ffd1dc");
+    headGrad.addColorStop(1, "#ff8fa3");
+    ctx.fillStyle = headGrad;
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, Math.PI*2);
+    ctx.fill();
+    // ===== USZY =====
+
+
+// lewe
+    ctx.fillStyle = "#ffb3c1";
+ctx.beginPath();
+ctx.moveTo(x - size*0.7, y - size*0.4);
+ctx.lineTo(x - size*0.7, y - size*1.2);
+ctx.lineTo(x - size*0.15, y - size*0.95); 
+ctx.fill();
+
+// prawe
+    ctx.fillStyle = "#ffb3c1";
+ctx.beginPath();
+ctx.moveTo(x + size*0.7, y - size*0.4);
+ctx.lineTo(x + size*0.7, y - size*1.2);
+ctx.lineTo(x + size*0.15, y - size*0.95);
+ctx.fill();
+    //===== RYJ =====
+    let snoutGrad = ctx.createRadialGradient( x, y + size*0.3, size*0.1, x, y + size*0.3, size*0.6 ); 
+    snoutGrad.addColorStop(0, "#ffb3c1");
+    snoutGrad.addColorStop(1, "#e56b83"); ctx.fillStyle = snoutGrad;
+    ctx.beginPath(); 
+    ctx.ellipse(x, y + size*0.35, size*0.55, size*0.35, 0, 0, Math.PI*2);
+    ctx.fill();
+    // ===== NOSKI ===== 
+    ctx.fillStyle = "#2b2b2b"; 
+    ctx.beginPath(); ctx.arc(x - size*0.18, y + size*0.35, size*0.1, 0, Math.PI*2);
+    ctx.arc(x + size*0.18, y + size*0.35, size*0.1, 0, Math.PI*2); 
+    ctx.fill();
+// ===== OCZY =====
+
+let panicLevel = 0;
+
+if(lavaDist < 200){
+  panicLevel = 1 - (lavaDist / 200);
+  if(panicLevel < 0) panicLevel = 0;
+}
+
+let eyeSize = size * (0.16 + panicLevel * 0.18);
+
+let eyeOffsetX = size * 0.35;
+let eyeOffsetY = size * 0.25;
+
+// tilt = agresja
+let tilt = panicLevel * size * 0.12;
+
+// mikro drżenie
+let rageShake = Math.sin(uiTime * 40) * panicLevel * 1.5;
+
+ctx.fillStyle = "black";
+ctx.beginPath();
+ctx.arc(x - eyeOffsetX + rageShake, y - eyeOffsetY - tilt, eyeSize, 0, Math.PI*2);
+ctx.arc(x + eyeOffsetX + rageShake, y - eyeOffsetY + tilt, eyeSize, 0, Math.PI*2);
+ctx.fill();
+    // ===== POŁYSK W OCZACH ===== 
+    ctx.fillStyle = "white";
+    ctx.beginPath(); 
+    ctx.arc(x - size*0.32, y - size*0.3, size*0.05, 0, Math.PI*2);
+    ctx.arc(x + size*0.32, y - size*0.3, size*0.05, 0, Math.PI*2); 
+    ctx.fill();
+  
+    // ===== POWIEKI =====
+if(blink > 0){
+  ctx.fillStyle = pigColor;
+
+  const h = r*0.25 * blink;
+
+  ctx.fillRect(x - r*0.5, y - r*0.25, r*0.44, h);
+  ctx.fillRect(x + r*0.06, y - r*0.25, r*0.44, h);
 }
     
 
 
+    ctx.shadowBlur = 0;
+    
+    // OGONEK
+ctx.strokeStyle = "#ff9ecb";
+ctx.lineWidth = size * 0.18;
+ctx.lineCap = "round";
+
+ctx.beginPath();
+
+let tailX = size * 0.85;
+let tailY = size * 0.15;
+
+ctx.moveTo(tailX, tailY);
+
+// spiralny ogonek
+const wiggle = Math.sin(performance.now()*0.01) * size*0.05;
+
+ctx.arc(tailX + size*0.2 + wiggle, tailY, size*0.18, 0, Math.PI * 1.5);
+
+ctx.stroke();
+    
+    ctx.restore();
+  return pigColor;
+}
 function drawDeathSmoke(){
 
   if(gameState !== "dead" || deathSmokeTimer <= 0) return;
@@ -1262,7 +1386,9 @@ function drawCompassCircle(){
 
   const shake = getCompassShake();
 const cx = compass.x + shake;
-const cy = compass.y;
+const cy = compass.y
+
+;
 
   let lavaDist = dangerY - (player.y + player.h);
 
@@ -1635,22 +1761,3 @@ function loop(now){
 
 
 requestAnimationFrame(loop);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
