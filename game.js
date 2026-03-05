@@ -209,16 +209,21 @@ platforms.push({
   spawnInitialCoins();
 }
 
-function spawnDust(x, y){
-  for(let i = 0; i < 4; i++){
+function spawnDust(x, y, rainbow=false){
+
+  for(let i = 0; i < 6; i++){
+
     dustParticles.push({
       x: x,
       y: y,
-      vx: (Math.random()-0.5)*2,
-      vy: -Math.random()*2,
-      size: 4 + Math.random()*3,
-      life: 20
+      vx: (Math.random()-0.5)*4,
+      vy: -Math.random()*3,
+      size: 4 + Math.random()*4,
+      life: 20,
+      rainbow: rainbow,
+      color: getRainbowColor(Math.random())
     });
+
   }
 }
 
@@ -424,6 +429,10 @@ function tryBoost(){
   boostTimer = boostDuration;
   boostVisualTime = 0;   // ← START ANIMACJI
 
+   // 🌈 BOOST BLAST
+  spawnDust(player.x + player.w/2, player.y + player.h + 8, true);
+  spawnDust(player.x + player.w/2, player.y + player.h + 8, true);
+  spawnDust(player.x + player.w/2, player.y + player.h + 8, true);
 
   // lekki startowy kop
   if(player.vy > 0) player.vy *= 0.3;
@@ -596,6 +605,7 @@ function updatePlatforms(dt){
       squashVel = -8;
       //kurz przy lądowaniu
       spawnDust(player.x + player.w/2, player.y + player.h);
+
       // micro impact
       screenShakeTime = 0.08;
       screenShakePower = 8;
@@ -1056,7 +1066,7 @@ function drawDust(){
 
     ctx.globalAlpha = p.life/20;
 
-    ctx.fillStyle = "#ffffff";
+    ctx.fillStyle = p.rainbow ? p.color : "#ffffff";
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
     ctx.fill();
