@@ -1123,8 +1123,8 @@ function drawPlayer(){
 
   ctx.drawImage(
     pigImg,
-    -size/3,
-    -size/3,
+    -size/2,
+    -size/2,
     size,
     size
   );
@@ -1635,6 +1635,7 @@ function loop(now){
 
 
 requestAnimationFrame(loop);
+
 
 
 
