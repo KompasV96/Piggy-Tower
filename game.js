@@ -1115,7 +1115,7 @@ function drawPlayer(){
   ctx.translate(cx, cy);
   ctx.scale(scaleX, scaleY);
 
-  const size = player.w;
+ const size = player.w * 4;
 
   ctx.shadowColor = "rgba(0,0,0,0.35)";
   ctx.shadowBlur = 12;
@@ -1123,8 +1123,8 @@ function drawPlayer(){
 
   ctx.drawImage(
     pigImg,
-    -size/6,
-    -size/6,
+    -size/3,
+    -size/3,
     size,
     size
   );
@@ -1635,6 +1635,7 @@ function loop(now){
 
 
 requestAnimationFrame(loop);
+
 
 
 
