@@ -91,7 +91,7 @@ let musicStarted = false;
 let player = {
   x: GAME_WIDTH/2 - 15,
   y: REAL_HEIGHT - 120,
-  w: 30, h: 30,
+  w: 50, h: 50,
   vx: 0, vy: 0,
   lastY: REAL_HEIGHT - 120
 };
@@ -1637,6 +1637,7 @@ function loop(now){
 
 
 requestAnimationFrame(loop);
+
 
 
 
