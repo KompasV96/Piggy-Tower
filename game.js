@@ -1101,7 +1101,7 @@ function getLookDir(){
   return {x, y};
 }
 
- function drawPlayer(){
+function drawPlayer(){
 
   if(!pigImg.complete) return;
 
@@ -1115,18 +1115,16 @@ function getLookDir(){
   ctx.translate(cx, cy);
   ctx.scale(scaleX, scaleY);
 
-  const size = player.w * 7;
+  const size = player.w;
 
+  ctx.shadowColor = "rgba(0,0,0,0.35)";
+  ctx.shadowBlur = 12;
+  ctx.shadowOffsetY = 6;
 
-ctx.shadowColor = "rgba(0,0,0,0.35)";
-ctx.shadowBlur = 12;
-ctx.shadowOffsetY = 6;
-
-   
   ctx.drawImage(
     pigImg,
-    -size/7,
-    -size/7,
+    -size/2,
+    -size/2,
     size,
     size
   );
@@ -1637,6 +1635,7 @@ function loop(now){
 
 
 requestAnimationFrame(loop);
+
 
 
 
