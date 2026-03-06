@@ -75,9 +75,11 @@ function getCompassClickPulse(){
  if(boostCharges <= 0) return 0;
   return Math.sin(uiTime * 8) * 4 + 4;
 }
+
 // ---------- GAME STATE --------------------------------------
+
+// start | play | pause | dead | loading | menu
 let gameState = "start";
-// start | play | pause | dead | loading
 let loadingTimer = 0;
 // ---------- AUDIO ----------
 let music = new Audio("audio/techno_loop.mp3");
@@ -191,6 +193,22 @@ function createPlatform(y){
 
   return { x, y, w, h: GAME_HEIGHT * 0.03 };
 }
+
+let menuButtons = [
+  { text:"PLAY", y: REAL_HEIGHT/2 },
+  { text:"SETTINGS", y: REAL_HEIGHT/2 + 70 }
+  
+];
+let pauseButtons = [
+  { text:"RESUME", y: REAL_HEIGHT/2 - 10 },
+  { text:"RESTART", y: REAL_HEIGHT/2 + 40 },
+  { text:"MENU", y: REAL_HEIGHT/2 + 90 }
+];
+let gameOverButtons = [
+  { text:"RESTART", y: REAL_HEIGHT/2 + 160 },
+  { text:"MENU", y: REAL_HEIGHT/2 + 210 }
+];
+
 function initPlatforms(){
   platforms = [];
 
@@ -300,61 +318,133 @@ let touchX = 0;
 
 canvas.addEventListener("pointerdown", e => {
 
-  if(!musicStarted){
-    music.play()
-      .then(() => {
-        musicStarted = true;
-        console.log("MUSIC OK");
-      })
-      .catch(err => {
-        console.log("MUSIC ERROR", err);
-      });
-  }
-
-
-
-  layoutUI();
-  e.preventDefault();
-
   const pos = getPointerPos(e);
   const mx = pos.x;
   const my = pos.y;
 
-  if(gameState==="pause"){
-    gameState="play";
+  // START SCREEN
+  if(gameState === "start"){
+    gameState = "menu";
     return;
   }
 
+  // MENU
+  if(gameState === "menu"){
 
+    for(let b of menuButtons){
 
+      if(Math.abs(pos.y - b.y) < 30){
 
-  if(gameState==="start"){ gameState="play"; return; }
-  if(gameState==="dead"){ resetGame(); return; }
+        if(b.text === "PLAY"){
+          resetGame();
+          gameState = "play";
+        }
 
-  // HUD nie steruje ruchem
-  if(my <= HUD){
+        if(b.text === "SETTINGS"){
+          gameState = "settings";
+        }
 
-  // PAUSE
-  let dxp = mx - pauseButton.x;
-  let dyp = my - pauseButton.y;
-  if(Math.sqrt(dxp*dxp+dyp*dyp) <= pauseButton.r){
-    if(gameState==="play") gameState="pause";
-    else if(gameState==="pause") gameState="play";
+      }
+
+    }
+
     return;
   }
 
-  // BOOST
-  const dx = mx - compass.x;
-  const dy = my - compass.y;
-  if(Math.sqrt(dx*dx+dy*dy) <= compass.r*0.75){
-    tryBoost();
+  // PAUSE MENU
+  if(gameState === "pause"){
+
+    for(let b of pauseButtons){
+
+      if(Math.abs(pos.y - b.y) < 25){
+
+        if(b.text === "RESUME"){
+          gameState = "play";
+        }
+
+        if(b.text === "RESTART"){
+          resetGame();
+          gameState = "play";
+        }
+
+        if(b.text === "MENU"){
+          gameState = "menu";
+        }
+
+      }
+
+    }
+
+    return;
+  }
+  
+if(gameState === "dead"){
+
+  const pos = getPointerPos(e);
+
+  for(let b of gameOverButtons){
+
+    if(Math.abs(pos.y - b.y) < 25){
+
+      if(b.text === "RESTART"){
+        resetGame();
+        gameState = "play";
+      }
+
+      if(b.text === "MENU"){
+        gameState = "menu";
+      }
+
+    }
+
   }
 
   return;
 }
 
+
+
+
+
+  // MUSIC START
+  if(!musicStarted){
+    music.play().catch(()=>{});
+    musicStarted = true;
+  }
+  
+  
+  layoutUI();
+  e.preventDefault();
+
+  // HUD kliknięcia
+  if(my <= HUD){
+
+    // PAUSE BUTTON
+    let dxp = mx - pauseButton.x;
+    let dyp = my - pauseButton.y;
+
+    if(Math.sqrt(dxp*dxp + dyp*dyp) <= pauseButton.r){
+      gameState = "pause";
+      return;
+    }
+
+
+
+    // BOOST
+    const dx = mx - compass.x;
+    const dy = my - compass.y;
+
+    if(Math.sqrt(dx*dx + dy*dy) <= compass.r*0.75){
+      tryBoost();
+    }
+
+    return;
+  }
+
+  // MOVEMENT
   touching = true;
   touchX = mx;
+
 });
 
 canvas.addEventListener("pointermove", e=>{
@@ -413,8 +503,7 @@ function resetGame(){
 
   initPlatforms();   // ← jedyne miejsce generacji monet
   coinScore = 0;
-  gameState = "loading";
-  loadingTimer = 900;
+  gameState = "play";
 
   boostCharges = maxBoostCharges;
   boostLockTimer = 0;
@@ -1532,14 +1621,100 @@ ctx.restore();
   pauseButton.x = compass.x - compass.r - gap - pauseButton.r;
   pauseButton.y = HUD/2;
 }
+function drawStartScreen(){
 
+  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  ctx.fillRect(0,0,GAME_WIDTH,REAL_HEIGHT);
 
+  ctx.textAlign = "center";
 
-  
+  ctx.font = "bold 54px Arial";
+  ctx.fillStyle = "#ff9ecb";
+
+  let bounce = Math.sin(uiTime*2)*8;
+
+  ctx.fillText(
+    "PIGGY TOWER",
+    GAME_WIDTH/2,
+    REAL_HEIGHT/2 - 100 + bounce
+  );
+
+  ctx.font = "22px Arial";
+  ctx.fillStyle = "white";
+
+  ctx.fillText(
+    "tap to continue",
+    GAME_WIDTH/2,
+    REAL_HEIGHT/2 + 40
+  );
+}
+
+function drawMenu(){
+
+  // ciemne tło
+  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  ctx.fillRect(0,0,GAME_WIDTH,REAL_HEIGHT);
+
+  ctx.textAlign = "center";
+
+  // ===== TITLE =====
+  ctx.font = "bold 52px Arial";
+  ctx.fillStyle = "#ff9ecb";
+
+  let titleBounce = Math.sin(uiTime * 2) * 6;
+
+  ctx.fillText(
+    "PIGGY TOWER",
+    GAME_WIDTH/2,
+    REAL_HEIGHT/2 - 120 + titleBounce
+  );
+
+  // ===== BUTTONS =====
+  ctx.font = "28px Arial";
+
+  for(let b of menuButtons){
+
+    let pulse = 1 + Math.sin(uiTime*4) * (b.text === "PLAY" ? 0.08 : 0.03);
+
+    ctx.save();
+    ctx.translate(GAME_WIDTH/2, b.y);
+    ctx.scale(pulse, pulse);
+
+    // glow tylko dla PLAY
+    if(b.text === "PLAY"){
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = "#ff6fa8";
+      ctx.fillStyle = "#ff9ecb";
+    }else{
+      ctx.shadowBlur = 0; 
+      ctx.fillStyle = "white";
+    }
+
+    ctx.fillText(b.text,0,0);
+
+    // outline dla czytelności
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "rgba(0,0,0,0.4)";
+    ctx.strokeText(b.text,0,0);
+
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+
+  // ===== BEST SCORE =====
+  ctx.font="18px Arial";
+  ctx.fillStyle="#ff9ecb";
+  ctx.fillText("BEST: "+bestScore, GAME_WIDTH/2, REAL_HEIGHT/2 + 140);
+
+  // ===== hint =====
+  ctx.font="16px Arial";
+  ctx.fillStyle="rgba(255,255,255,0.6)";
+  ctx.fillText("tap PLAY to start", GAME_WIDTH/2, REAL_HEIGHT/2 + 200);
+}
+
 
 
 function drawOverlay(title, sub){
-
   // ciemne tło
   ctx.fillStyle = "rgba(0,0,0,0.6)";
   ctx.fillRect(0,0,GAME_WIDTH,REAL_HEIGHT);
@@ -1560,14 +1735,16 @@ function drawOverlay(title, sub){
     ctx.shadowColor = "#ff0000";
 
     ctx.fillStyle = "#ff1a1a";
-    ctx.fillText("GAME OVER", cx, cy);
+    
 
     ctx.shadowBlur = 0;
 
     // outline horror
     ctx.lineWidth = 3;
     ctx.strokeStyle = "#330000";
-    ctx.strokeText("GAME OVER", cx, cy);
+    
+    ctx.fillStyle = "#ff1a1a";
+    ctx.fillText("GAME OVER", cx, cy);
     
     // ===== REALISTIC 3D BACON =====
 if(baconMode){
@@ -1653,7 +1830,28 @@ for(let i=0;i<3;i++){
 
   ctx.restore();
 }
+    
+    for(let b of gameOverButtons){
 
+  let pulse = 1 + Math.sin(uiTime*4)*0.04;
+
+  ctx.save();
+  ctx.translate(GAME_WIDTH/2, b.y);
+  ctx.scale(pulse,pulse);
+
+  // glow tylko restart
+  if(b.text === "RESTART"){
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = "#ff2a2a";
+  }
+
+  ctx.fillStyle="white";
+  ctx.fillText(b.text,0,0);
+
+  ctx.shadowBlur = 0;
+
+  ctx.restore();
+}
     // ===== HORROR BLOOD DRIP =====
 for(let i = -4; i <= 4; i++){
 
@@ -1701,56 +1899,52 @@ for(let i = -4; i <= 4; i++){
     ctx.fillText(title, cx, cy);
   }
 
-  // ===== SUBTEXT =====
+if(gameState !== "dead"){
   ctx.font = "25px Arial";
   ctx.fillStyle = "white";
   ctx.fillText(sub, GAME_WIDTH/2, REAL_HEIGHT/2 + 30);
 }
+}
 function drawPauseOverlay(){
 
-  ctx.fillStyle="rgba(0,0,0,0.55)";
+  ctx.fillStyle="rgba(0,0,0,0.65)";
   ctx.fillRect(0,0,GAME_WIDTH,REAL_HEIGHT);
 
-  ctx.fillStyle="white";
   ctx.textAlign="center";
 
-  const cx = GAME_WIDTH/2;
-  const cy = REAL_HEIGHT/2;
+  ctx.font="bold 52px Arial";
+  ctx.fillStyle="white";
 
-  // tytuł
-  ctx.font="50px Arial";
-  ctx.fillText("PAUSE",cx,cy-60);
+  ctx.fillText("PAUSE", GAME_WIDTH/2, REAL_HEIGHT/2 - 80);
 
-  // przycisk play
-  const r = 32;
+  ctx.font="26px Arial";
 
-  ctx.beginPath();
-  ctx.arc(cx,cy,r,0,Math.PI*2);
-  ctx.lineWidth=3;
-  ctx.strokeStyle="white";
-  ctx.stroke();
+  for(let b of pauseButtons){
 
-  // trójkąt ▶
-  ctx.beginPath();
-  ctx.moveTo(cx-8,cy-14);
-  ctx.lineTo(cx-8,cy+14);
-  ctx.lineTo(cx+16,cy);
-  ctx.closePath();
-  ctx.fill();
+    let pulse = 1 + Math.sin(uiTime*4)*0.04;
 
-  // tekst
-  ctx.font="20px Arial";
-  ctx.fillText("tap anywhere to continue",cx,cy+60);
+    ctx.save();
+    ctx.translate(GAME_WIDTH/2, b.y);
+    ctx.scale(pulse,pulse);
+
+    ctx.fillStyle="white";
+    ctx.fillText(b.text,0,0);
+
+    ctx.restore();
+  }
+
 }
 
  
  function drawOverlayLayer(){
-  if(gameState==="start") drawOverlay("PIGGY TOWER","tap to start");
+
+  if(gameState==="start") drawStartScreen();
+  if(gameState==="menu") drawMenu();
   if(gameState==="dead") drawOverlay("GAME OVER","tap to restart");
   if(gameState==="loading") drawOverlay("loading...","");
-   if(gameState==="pause") drawPauseOverlay();
- }
+  if(gameState==="pause") drawPauseOverlay();
 
+}
 function drawPauseButton(){
   ctx.beginPath();
   ctx.arc(pauseButton.x, pauseButton.y, pauseButton.r, 0, Math.PI*2);
@@ -1767,37 +1961,41 @@ function drawPauseButton(){
 function draw(){
   layoutUI();
   
- ctx.clearRect(0,0,GAME_WIDTH,REAL_HEIGHT);
- drawBackground();
+  ctx.clearRect(0,0,GAME_WIDTH,REAL_HEIGHT);
+  drawBackground();
+
   const shake = getScreenShakeOffset();
 
-  // tylko świat się trzęsie
-  ctx.save();
-  ctx.translate(shake.x, shake.y);
-  drawWorld();
-  ctx.restore();
+  // świat tylko podczas gry
+  if(gameState === "play" || gameState === "pause" || gameState === "dead"){
+    ctx.save();
+    ctx.translate(shake.x, shake.y);
+    drawWorld();
+    ctx.restore();
+  }
 
   // HUD stabilny
-  drawHUD();
+  if(gameState === "play" || gameState === "pause"){
+    drawHUD();
+  }
 
   // overlay + UI
- drawOverlayLayer();
+  drawOverlayLayer();
 
-if(gameState !== "pause")
-  drawPauseButton();
+  if(gameState === "play")
+    drawPauseButton();
 
   // flash na końcu
   if(boostFlash > 0){
     ctx.fillStyle = "rgba(255,255,255," + (boostFlash*0.35) + ")";
     ctx.fillRect(0,0,GAME_WIDTH,REAL_HEIGHT);
   }
-  // flash death
-if(deathFlash > 0){
-  ctx.fillStyle = "rgba(255,0,0," + (deathFlash * 0.6) + ")";
-  ctx.fillRect(0,0,GAME_WIDTH,REAL_HEIGHT);
-}
-}
 
+  if(deathFlash > 0){
+    ctx.fillStyle = "rgba(255,0,0," + (deathFlash * 0.6) + ")";
+    ctx.fillRect(0,0,GAME_WIDTH,REAL_HEIGHT);
+  }
+}
 // ================= LOOP =================
 
 let lastTime=performance.now();
