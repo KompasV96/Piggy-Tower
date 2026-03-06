@@ -217,11 +217,11 @@ function spawnDust(x, y, rainbow=false){
       x: x,
       y: y,
       vx: (Math.random()-0.5)*4,
-      vy: -Math.random()*3,
+      vy: -Math.random()*4 - 2,
       size: 4 + Math.random()*4,
       life: 20,
       rainbow: rainbow,
-      color: getRainbowColor(Math.random())
+      color: getRainbowColor(uiTime + Math.random())
     });
 
   }
@@ -414,7 +414,7 @@ function resetGame(){
   initPlatforms();   // ← jedyne miejsce generacji monet
   coinScore = 0;
   gameState = "loading";
-  loadingTimer = 400;
+  loadingTimer = 900;
 
   boostCharges = maxBoostCharges;
   boostLockTimer = 0;
@@ -427,12 +427,13 @@ function tryBoost(){
   boostCharges--;
   boosting = true;
   boostTimer = boostDuration;
+  deathSlowMo = 0.04;
   boostVisualTime = 0;   // ← START ANIMACJI
 
    // 🌈 BOOST BLAST
-  spawnDust(player.x + player.w/2, player.y + player.h + 8, true);
-  spawnDust(player.x + player.w/2, player.y + player.h + 8, true);
-  spawnDust(player.x + player.w/2, player.y + player.h + 8, true);
+  spawnDust(player.x + player.w/2, player.y + player.h + 30, true);
+  spawnDust(player.x + player.w/2, player.y + player.h + 30, true);
+  spawnDust(player.x + player.w/2, player.y + player.h + 30, true);
 
   // lekki startowy kop
   if(player.vy > 0) player.vy *= 0.3;
@@ -601,14 +602,16 @@ function updatePlatforms(dt){
 
         player.y = p.y - player.h;
         player.vy = jumpPower;
-      // zwykły splash sadła
-      squashVel = -8;
-      //kurz przy lądowaniu
-      spawnDust(player.x + player.w/2, player.y + player.h);
+      
+        // zwykły splash sadła
+        squashVel = -8;
+      
+        //kurz przy lądowaniu
+        spawnDust(player.x + player.w/2, player.y + player.h);
 
-      // micro impact
-      screenShakeTime = 0.08;
-      screenShakePower = 8;
+        // micro impact
+        screenShakeTime = 0.08;
+        screenShakePower = 8;
 
 onGround = true;
 coyoteTimer = coyoteTime;
@@ -675,8 +678,8 @@ function update(dt){
 
   if(deathSlowMo > 0){
 
-    let t = deathSlowMo / 0.12;        // 1 → 0
-    timeScale = 0.35 + 0.65*(1 - t);   // płynny powrót do 1
+    let t = deathSlowMo / 0.50;        // 1 → 0
+    timeScale = 0.18 + 0.82*(1 - t);   // płynny powrót do 1
 
     deathSlowMo -= realDtSec;
     if(deathSlowMo < 0) deathSlowMo = 0;
