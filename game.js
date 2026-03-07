@@ -58,7 +58,7 @@ function getPointerPos(e){
   };
 }
 function vibrate(ms){
-  if(navigator.vibrate){
+  if(vibrationEnabled && navigator.vibrate){
     navigator.vibrate(ms);
   }
 }
@@ -78,13 +78,17 @@ function getCompassClickPulse(){
 
 // ---------- GAME STATE --------------------------------------
 
-// start | play | pause | dead | loading | menu
+// start | play | pause | dead | loading | menu | shop
 let gameState = "start";
 let loadingTimer = 0;
+let musicVolume = Number(localStorage.getItem("musicVolume")) || 0.6;
+let vibrationEnabled = localStorage.getItem("vibration") !== "false";
+let showFPS = localStorage.getItem("showFPS") !== "false";
+
 // ---------- AUDIO ----------
 let music = new Audio("audio/techno_loop.mp3");
 music.loop = true;
-music.volume = 0.6;
+music.volume = musicVolume;
 music.preload = "auto";
 let musicStarted = false;
 
@@ -135,6 +139,16 @@ let dustParticles = [];
 let worldOffset = 0;
 let score = 0;
 let bestScore = Number(localStorage.getItem("piggyBest")) || 0;
+let wallet = Number(localStorage.getItem("piggyWallet")) || 0;
+        let skins = [
+ { id:"pink", price:0 },
+ { id:"ninja", price:200 },
+ { id:"gold", price:500 },
+ { id:"space", price:800 }
+];
+
+let ownedSkins = JSON.parse(localStorage.getItem("ownedSkins")) || ["pink"];
+let currentSkin = localStorage.getItem("currentSkin") || "pink";
 let fps = 0;
 let fpsTimer = 0;
 let fpsFrames = 0;
@@ -196,10 +210,11 @@ function createPlatform(y){
   return { x, y, w, h: GAME_HEIGHT * 0.03 };
 }
 
+
 let menuButtons = [
   { text:"PLAY", y: REAL_HEIGHT/2 },
-  { text:"SETTINGS", y: REAL_HEIGHT/2 + 70 }
-  
+  { text:"SHOP", y: REAL_HEIGHT/2 + 70 },
+  { text:"SETTINGS", y: REAL_HEIGHT/2 + 140 }
 ];
 let pauseButtons = [
   { text:"RESUME", y: REAL_HEIGHT/2 - 10 },
@@ -210,6 +225,11 @@ let gameOverButtons = [
   { text:"RESTART", y: REAL_HEIGHT/2 + 160 },
   { text:"MENU", y: REAL_HEIGHT/2 + 210 }
 ];
+let settingsButtons = [
+  { text:"BACK", y: REAL_HEIGHT/2 + 120 }
+];
+
+
 
 function initPlatforms(){
   platforms = [];
@@ -341,6 +361,10 @@ canvas.addEventListener("pointerdown", e => {
           resetGame();
           gameState = "play";
         }
+        if(b.text === "SHOP"){
+  gameState = "shop";
+}
+
 
         if(b.text === "SETTINGS"){
           gameState = "settings";
@@ -352,6 +376,94 @@ canvas.addEventListener("pointerdown", e => {
 
     return;
   }
+  
+  if(gameState === "shop"){
+
+ let startY = REAL_HEIGHT/2 - 60;
+
+ for(let i=0;i<skins.length;i++){
+
+   let s = skins[i];
+   let y = startY + i*60;
+
+   if(Math.abs(my - y) < 25){
+
+  if(ownedSkins.includes(s.id)){
+
+  // jeśli skin jest kupiony → ustaw jako aktywny
+  currentSkin = s.id;
+  localStorage.setItem("currentSkin", currentSkin);
+
+}else if(wallet >= s.price){
+
+  // kup skin
+  wallet -= s.price;
+  ownedSkins.push(s.id);
+
+  localStorage.setItem("piggyWallet", wallet);
+  localStorage.setItem("ownedSkins", JSON.stringify(ownedSkins));
+
+}
+
+   }
+
+ }
+
+ if(Math.abs(my - (REAL_HEIGHT/2 + 200)) < 25){
+   gameState = "menu";
+ }
+
+ return;
+}
+  
+  
+  if(gameState === "settings"){
+
+  // ===== VOLUME SLIDER =====
+  let barW = 200;
+  let barX = GAME_WIDTH/2 - barW/2;
+  let barY = REAL_HEIGHT/2 - 60;
+
+  if(my > barY-15 && my < barY+25 &&
+     mx > barX && mx < barX + barW){
+
+    musicVolume = (mx - barX) / barW;
+
+    if(musicVolume < 0) musicVolume = 0;
+    if(musicVolume > 1) musicVolume = 1;
+
+    music.volume = musicVolume;
+    localStorage.setItem("musicVolume", musicVolume);
+    return;
+  }
+
+  // ===== VIBRATION TOGGLE =====
+  if(Math.abs(my - (REAL_HEIGHT/2 + 10)) < 25){
+    vibrationEnabled = !vibrationEnabled;
+    localStorage.setItem("vibration", vibrationEnabled);
+    return;
+  }
+
+  // ===== FPS TOGGLE =====
+  if(Math.abs(my - (REAL_HEIGHT/2 + 60)) < 25){
+    showFPS = !showFPS;
+    localStorage.setItem("showFPS", showFPS);
+    return;
+  }
+
+  // ===== BACK =====
+  for(let b of settingsButtons){
+
+    if(Math.abs(my - b.y) < 25){
+      if(b.text === "BACK"){
+        gameState = "menu";
+      }
+    }
+
+  }
+
+  return;
+}
 
   // PAUSE MENU
   if(gameState === "pause"){
@@ -748,7 +860,11 @@ function updateCoins(){
        player.y + player.h > c.y){
 
         coinScore += 50;
-        coins.splice(i,1);
+wallet += 50;
+
+localStorage.setItem("piggyWallet", wallet);
+
+coins.splice(i,1);
     }
 
     // usuwamy gdy spadną poza ekran
@@ -758,6 +874,7 @@ function updateCoins(){
   }
 }
 function update(dt){
+
 
   fpsFrames++;
 fpsTimer += dt;
@@ -893,6 +1010,24 @@ function getRainbowColor(t){
   let g = Math.sin(a+2)*127+128;
   let b = Math.sin(a+4)*127+128;
   return `rgb(${r|0},${g|0},${b|0})`;
+}
+
+function shadeColor(color, percent){
+
+  let f = parseInt(color.slice(1),16);
+  let t = percent < 0 ? 0 : 255;
+  let p = percent < 0 ? percent*-1 : percent;
+
+  let R = f>>16;
+  let G = f>>8 & 0x00FF;
+  let B = f & 0x0000FF;
+
+  return "#" + (
+    0x1000000 +
+    (Math.round((t-R)*p)+R)*0x10000 +
+    (Math.round((t-G)*p)+G)*0x100 +
+    (Math.round((t-B)*p)+B)
+  ).toString(16).slice(1);
 }
 function getScreenShakeOffset(){
   if(screenShakeTime <= 0) return {x:0,y:0};
@@ -1199,14 +1334,17 @@ function drawDust(){
       r
     );
 
-    grad.addColorStop(0,"#fff6b0");
-    grad.addColorStop(0.35,"#ffd700");
-    grad.addColorStop(1,"#b8860b");
+    grad.addColorStop(0,"#ff8c00");
+    grad.addColorStop(0.35,"#ff9f1a");
+    grad.addColorStop(1,"#ffa500");
 
     ctx.fillStyle = grad;
     ctx.beginPath();
     ctx.arc(c.x, c.y, r, 0, Math.PI*2);
     ctx.fill();
+    ctx.lineWidth = 2;
+ctx.strokeStyle = "#5a3b00";
+ctx.stroke();
 
     ctx.shadowBlur = 0;
 
@@ -1269,7 +1407,14 @@ function getLookDir(){
   let playerBottom = player.y + player.h;
   let lavaDist = dangerY - playerBottom;
 
-  const pigColor = "#ff9ecb";
+  let pigColors = {
+ pink:"#ff9ecb",
+ ninja:"#222",
+ gold:"#ffd76a",
+ space:"#66e0ff"
+};
+
+const pigColor = pigColors[currentSkin] || "#ff9ecb";
   currentPigColor = pigColor;
 
   const cx = player.x + player.w/2;
@@ -1310,9 +1455,15 @@ if(boosting || boostAfterglow > 0){
     ctx.ellipse( x + size*0.15, y + size*0.9, size*0.7, size*0.25, 0, 0, Math.PI*2 );
     ctx.fill();
     // ===== GŁOWA (gradient 3D) =====
-    let headGrad = ctx.createRadialGradient( x - size*0.3, y - size*0.4, size*0.1, x, y, size );
-    headGrad.addColorStop(0, "#ffd1dc");
-    headGrad.addColorStop(1, "#ff8fa3");
+   let headGrad = ctx.createRadialGradient(
+  x - size*0.3, y - size*0.4,
+  size*0.1,
+  x, y,
+  size
+);
+
+headGrad.addColorStop(0, pigColor);
+headGrad.addColorStop(1, shadeColor(pigColor,-0.6));
     ctx.fillStyle = headGrad;
     ctx.beginPath();
     ctx.arc(x, y, size, 0, Math.PI*2);
@@ -1353,20 +1504,20 @@ let panicLevel = 0;
 
 if(lavaDist < 200){
   panicLevel = 1 - (lavaDist / 200);
-  if(panicLevel < 0) panicLevel = 0;
+  panicLevel = Math.max(0, panicLevel);
+  panicLevel = panicLevel * panicLevel;
 }
 
-let eyeSize = size * (0.16 + panicLevel * 0.18);
+let eyeSize = size * (0.16 + panicLevel * 0.25);
 
 let eyeOffsetX = size * 0.35;
 let eyeOffsetY = size * 0.25;
 
-// tilt = agresja
-let tilt = panicLevel * size * 0.12;
+let tilt = panicLevel * size * 0.12 + Math.sin(uiTime * 10) * panicLevel * 1.5;
 
-// mikro drżenie
-let rageShake = Math.sin(uiTime * 40) * panicLevel * 1.5;
-
+let rageShake = Math.sin(uiTime * 40) * panicLevel * 2.5;
+    
+    
 ctx.fillStyle = "black";
 ctx.beginPath();
 ctx.arc(x - eyeOffsetX + rageShake, y - eyeOffsetY - tilt, eyeSize, 0, Math.PI*2);
@@ -1378,6 +1529,33 @@ ctx.fill();
     ctx.arc(x - size*0.32, y - size*0.3, size*0.05, 0, Math.PI*2);
     ctx.arc(x + size*0.32, y - size*0.3, size*0.05, 0, Math.PI*2); 
     ctx.fill();
+    
+    // ===== OKULARY (tylko dla pink) =====
+if(currentSkin === "pink"){
+
+  ctx.strokeStyle = "black";
+  ctx.lineWidth = size * 0.18;
+
+  ctx.strokeStyle = "black";
+ctx.lineWidth = size * 0.18;
+
+// lewa soczewka
+ctx.beginPath();
+ctx.arc(x - size*0.35, y - size*0.25, size*0.28, 0, Math.PI*2);
+ctx.fill();
+
+// prawa soczewka
+ctx.beginPath();
+ctx.arc(x + size*0.35, y - size*0.25, size*0.28, 0, Math.PI*2);
+ctx.fill();
+
+  // mostek
+  ctx.beginPath();
+  ctx.moveTo(x - size*0.07, y - size*0.25);
+  ctx.lineTo(x + size*0.07, y - size*0.25);
+  ctx.stroke();
+
+}
   
     // ===== POWIEKI =====
 if(blink > 0){
@@ -1474,6 +1652,7 @@ function drawPanicBubble(){
   ctx.restore();
 }
 
+
   function drawHUD(){
 
   // panel
@@ -1510,7 +1689,20 @@ let pauseButton = { x:0, y:0, r:18 };
   ctx.fillStyle=`rgb(${r},${g},${b})`;
   ctx.fillRect(barX,barY,barW*lavaT,barH);
 }
+function drawWalletTopRight(){
 
+  ctx.font = "20px Arial";
+  ctx.textAlign = "right";
+  ctx.textBaseline = "top";
+
+  ctx.shadowBlur = 15;
+  ctx.shadowColor = "#ffd76a";
+
+  ctx.fillStyle = "#ffd76a";
+  ctx.fillText("$ " + wallet, GAME_WIDTH - SAFE, SAFE);
+
+  ctx.shadowBlur = 0;
+}
 
  function drawScore(){
   ctx.textAlign="left";
@@ -1528,8 +1720,17 @@ ctx.shadowColor = "#ff9ecb";
 
 ctx.fillStyle = "#ffd1dc";
 ctx.fillText("Best: "+bestScore, SAFE, SAFE+25);
+   
+   // ===== WALLET =====
+ctx.shadowBlur = 20;
+ctx.shadowColor = "#ffd76a";
+
+ctx.fillStyle = "#ffd76a";
+ctx.fillText("$ " + wallet, SAFE, SAFE + 50);
 
 ctx.shadowBlur = 0;
+
+
 }
 function getCompassAngle(){
   let t = getLavaRatio();
@@ -1721,19 +1922,135 @@ function drawMenu(){
     ctx.restore();
   }
 
-  // ===== BEST SCORE =====
-  ctx.font="18px Arial";
-  ctx.fillStyle="#ff9ecb";
-  ctx.fillText("BEST: "+bestScore, GAME_WIDTH/2, REAL_HEIGHT/2 + 140);
+
 
   // ===== hint =====
   ctx.font="16px Arial";
   ctx.fillStyle="rgba(255,255,255,0.6)";
   ctx.fillText("tap PLAY to start", GAME_WIDTH/2, REAL_HEIGHT/2 + 200);
+   drawWalletTopRight();
+}
+function drawShop(){
+
+ ctx.fillStyle="rgba(0,0,0,0.65)";
+ ctx.fillRect(0,0,GAME_WIDTH,REAL_HEIGHT);
+
+ ctx.textAlign="center";
+
+ ctx.font="bold 48px Arial";
+ ctx.fillStyle="white";
+
+ ctx.fillText("SHOP", GAME_WIDTH/2, REAL_HEIGHT/2 - 160);
+
+ ctx.font="26px Arial";
+
+ let startY = REAL_HEIGHT/2 - 60;
+
+ for(let i=0;i<skins.length;i++){
+
+   let s = skins[i];
+   let y = startY + i*60;
+
+   let owned = ownedSkins.includes(s.id);
+
+   let text;
+
+   if(owned){
+     text = s.id.toUpperCase() + " ✓";
+   }else{
+     text = s.id.toUpperCase() + "  $" + s.price;
+   }
+
+   ctx.fillStyle="white";
+
+   if(currentSkin === s.id){
+     ctx.fillStyle="#ff9ecb";
+   }
+
+   ctx.fillText(text, GAME_WIDTH/2, y);
+ }
+
+ ctx.fillStyle="#ff9ecb";
+ ctx.fillText("BACK", GAME_WIDTH/2, REAL_HEIGHT/2 + 200);
+
+ drawWalletTopRight();
 }
 
+function drawSettings(){
+
+  ctx.fillStyle="rgba(0,0,0,0.65)";
+  ctx.fillRect(0,0,GAME_WIDTH,REAL_HEIGHT);
+
+  ctx.textAlign="center";
+
+  // ===== TITLE =====
+  ctx.font="bold 48px Arial";
+  ctx.fillStyle="white";
+  ctx.fillText("SETTINGS", GAME_WIDTH/2, REAL_HEIGHT/2 - 160);
 
 
+  // ===== MUSIC VOLUME =====
+  ctx.font="22px Arial";
+  ctx.fillStyle="white";
+  ctx.fillText("MUSIC VOLUME", GAME_WIDTH/2, REAL_HEIGHT/2 - 90);
+
+  let barW = 200;
+  let barH = 10;
+  let barX = GAME_WIDTH/2 - barW/2;
+  let barY = REAL_HEIGHT/2 - 60;
+
+  // background bar
+  ctx.fillStyle="#333";
+  ctx.fillRect(barX, barY, barW, barH);
+
+  // filled bar
+  ctx.fillStyle="#ff9ecb";
+  ctx.fillRect(barX, barY, barW * musicVolume, barH);
+
+  // knob
+  ctx.beginPath();
+  ctx.arc(barX + barW * musicVolume, barY + barH/2, 8, 0, Math.PI*2);
+  ctx.fillStyle="white";
+  ctx.fill();
+
+
+  // ===== VIBRATION =====
+  ctx.font="24px Arial";
+  ctx.fillStyle="white";
+
+  let vibText = vibrationEnabled ? "VIBRATION: ON" : "VIBRATION: OFF";
+
+  ctx.fillText(vibText, GAME_WIDTH/2, REAL_HEIGHT/2 + 10);
+
+
+  // ===== FPS =====
+  let fpsText = showFPS ? "FPS: ON" : "FPS: OFF";
+
+  ctx.fillText(fpsText, GAME_WIDTH/2, REAL_HEIGHT/2 + 60);
+   drawWalletTopRight();
+
+
+  // ===== BACK BUTTON =====
+  ctx.font="26px Arial";
+
+  for(let b of settingsButtons){
+
+    let pulse = 1 + Math.sin(uiTime*4)*0.03;
+
+    ctx.save();
+    ctx.translate(GAME_WIDTH/2, b.y);
+    ctx.scale(pulse,pulse);
+
+    ctx.strokeStyle="rgba(0,0,0,0.5)";
+    ctx.lineWidth=2;
+    ctx.strokeText(b.text,0,0);
+
+    ctx.fillStyle="#ff9ecb";
+    ctx.fillText(b.text,0,0);
+
+    ctx.restore();
+  }
+}
 function drawOverlay(title, sub){
   // ciemne tło
   ctx.fillStyle = "rgba(0,0,0,0.6)";
@@ -1746,6 +2063,8 @@ function drawOverlay(title, sub){
   const cy = REAL_HEIGHT / 2 - 40;
 
   // ================= DEAD =================
+ 
+  
   if(gameState === "dead"){
 
     ctx.font = "bold 64px Arial";
@@ -1956,13 +2275,25 @@ function drawPauseOverlay(){
 }
 
  
- function drawOverlayLayer(){
+function drawOverlayLayer(){
 
   if(gameState==="start") drawStartScreen();
-  if(gameState==="menu") drawMenu();
-  if(gameState==="dead") drawOverlay("GAME OVER","tap to restart");
-  if(gameState==="loading") drawOverlay("loading...","");
-  if(gameState==="pause") drawPauseOverlay();
+
+  if(gameState==="menu")
+    drawMenu();
+  if(gameState==="shop") drawShop();
+
+  if(gameState==="settings")
+    drawSettings();
+
+  if(gameState==="dead")
+    drawOverlay("GAME OVER","tap to restart");
+
+  if(gameState==="loading")
+    drawOverlay("loading...","");
+
+  if(gameState==="pause")
+    drawPauseOverlay();
 
 }
 function drawPauseButton(){
@@ -2018,7 +2349,12 @@ function draw(){
   ctx.font = "14px Arial";
 ctx.fillStyle = "lime";
 ctx.textAlign = "right";
-ctx.fillText("FPS: " + fps, GAME_WIDTH - 10, REAL_HEIGHT - 10);
+if(showFPS){
+  ctx.font = "14px Arial";
+  ctx.fillStyle = "lime";
+  ctx.textAlign = "right";
+  ctx.fillText("FPS: " + fps, GAME_WIDTH - 10, REAL_HEIGHT - 10);
+}
 }
 // ================= LOOP =================
 
