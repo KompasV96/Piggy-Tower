@@ -135,7 +135,9 @@ let dustParticles = [];
 let worldOffset = 0;
 let score = 0;
 let bestScore = Number(localStorage.getItem("piggyBest")) || 0;
-
+let fps = 0;
+let fpsTimer = 0;
+let fpsFrames = 0;
 
 // ---------- DANGER ----------------------------------------------------
 let dangerY = REAL_HEIGHT + 200;
@@ -757,6 +759,14 @@ function updateCoins(){
 }
 function update(dt){
 
+  fpsFrames++;
+fpsTimer += dt;
+
+if (fpsTimer >= 1000){
+  fps = fpsFrames;
+  fpsFrames = 0;
+  fpsTimer = 0;
+}
   // ===== CAP DT (anti lag spike) =====
   if(dt > 50) dt = 50;
 
@@ -1504,12 +1514,22 @@ let pauseButton = { x:0, y:0, r:18 };
 
  function drawScore(){
   ctx.textAlign="left";
-  ctx.textBaseline="top";
-  ctx.font="20px Arial";
-  ctx.fillStyle = currentPigColor;
+ctx.textBaseline="top";
+ctx.font="20px Arial";
 
-  ctx.fillText("Score: "+score, SAFE, SAFE);
-  ctx.fillText("Best: "+bestScore, SAFE, SAFE+25);
+ctx.shadowBlur = 20;
+ctx.shadowColor = "#ff6fa8";   // różowy neon
+
+ctx.fillStyle = "#ff9ecb";
+ctx.fillText("Score: "+score, SAFE, SAFE);
+
+ctx.shadowBlur = 6;
+ctx.shadowColor = "#ff9ecb";
+
+ctx.fillStyle = "#ffd1dc";
+ctx.fillText("Best: "+bestScore, SAFE, SAFE+25);
+
+ctx.shadowBlur = 0;
 }
 function getCompassAngle(){
   let t = getLavaRatio();
@@ -1995,6 +2015,10 @@ function draw(){
     ctx.fillStyle = "rgba(255,0,0," + (deathFlash * 0.6) + ")";
     ctx.fillRect(0,0,GAME_WIDTH,REAL_HEIGHT);
   }
+  ctx.font = "14px Arial";
+ctx.fillStyle = "lime";
+ctx.textAlign = "right";
+ctx.fillText("FPS: " + fps, GAME_WIDTH - 10, REAL_HEIGHT - 10);
 }
 // ================= LOOP =================
 
