@@ -76,6 +76,21 @@ function getCompassClickPulse(){
   return Math.sin(uiTime * 8) * 4 + 4;
 }
 
+function rollStartBlessing(){
+
+  let r = Math.random();
+
+  if(r < 0.05){
+    startBlessing = "rocket";
+  }
+  else if(r < 0.35){
+    startBlessing = "luck";
+  }
+  else{
+    startBlessing = "none";
+  }
+
+}
 // ---------- GAME STATE --------------------------------------
 
 // start | play | pause | dead | loading | menu | shop
@@ -134,7 +149,7 @@ let baconMode = false;
 let baconSpawnTime = 0;
 let deathSlowMo = 0;
 let dustParticles = [];
-
+let confirmReset = false;
 // ---------- SCORE ------------------------------------------------
 let worldOffset = 0;
 let score = 0;
@@ -142,9 +157,9 @@ let bestScore = Number(localStorage.getItem("piggyBest")) || 0;
 let wallet = Number(localStorage.getItem("piggyWallet")) || 0;
         let skins = [
  { id:"pink", price:0 },
- { id:"ninja", price:200 },
- { id:"gold", price:500 },
- { id:"space", price:800 }
+ { id:"ninja", price:2500 },
+ { id:"gold", price:5000 },
+ { id:"space", price:7000 }
 ];
 
 let ownedSkins = JSON.parse(localStorage.getItem("ownedSkins")) || ["pink"];
@@ -178,6 +193,9 @@ let miracleUsed = false;
 let boostCharges = 3;
 const maxBoostCharges = 3;
 let boosting = false;
+let startBlessing = "none";
+let rocketMode = false;
+let rocketTimer = 0;
 
 let boostDuration = 1.1;
 let boostTimer = 0;
@@ -226,7 +244,8 @@ let gameOverButtons = [
   { text:"MENU", y: REAL_HEIGHT/2 + 210 }
 ];
 let settingsButtons = [
-  { text:"BACK", y: REAL_HEIGHT/2 + 120 }
+  { text:"RESET STATS", y: REAL_HEIGHT/2 + 110 },
+  { text:"BACK", y: REAL_HEIGHT/2 + 160 }
 ];
 
 
@@ -323,10 +342,7 @@ document.addEventListener("keydown", e=>{
   if(e.key==="ArrowRight") right=true;
   if(e.key==="ArrowUp") tryBoost();
 
-  if(e.code==="Space" && gameState==="start"){
-    e.preventDefault();
-    gameState="play";
-  }
+  
 
   if((e.key==="r"||e.key==="R") && gameState==="dead") resetGame();
 });
@@ -454,13 +470,36 @@ canvas.addEventListener("pointerdown", e => {
   // ===== BACK =====
   for(let b of settingsButtons){
 
-    if(Math.abs(my - b.y) < 25){
-      if(b.text === "BACK"){
-        gameState = "menu";
-      }
+  if(Math.abs(my - b.y) < 25){
+
+    if(b.text === "RESET STATS"){
+
+  if(!confirmReset){
+    confirmReset = true;
+    return;
+  }
+
+  bestScore = 0;
+  wallet = 0;
+
+  ownedSkins = ["pink"];
+  currentSkin = "pink";
+
+  localStorage.removeItem("piggyBest");
+  localStorage.removeItem("piggyWallet");
+  localStorage.removeItem("ownedSkins");
+  localStorage.removeItem("currentSkin");
+
+  confirmReset = false;
+  }
+
+    if(b.text === "BACK"){
+      gameState = "menu";
     }
 
   }
+
+}
 
   return;
 }
@@ -614,7 +653,26 @@ function resetGame(){
   left = false;
   right = false;
   touchSide = 0;
+  rollStartBlessing();
 
+if(startBlessing === "rocket"){
+
+  rocketMode = true;
+ rocketTimer = 1.8;
+player.vy = -2000;
+
+  screenShakeTime = 0.6;
+  screenShakePower = 70;
+
+  vibrate([40,60,80]);
+
+}
+
+
+if(startBlessing === "luck"){
+  miracleUsed = false;
+}
+  
   initPlatforms();   // ← jedyne miejsce generacji monet
   coinScore = 0;
   gameState = "play";
@@ -671,7 +729,7 @@ function updateDanger(dtSec){
   let distance = dangerY - (player.y + player.h);
 
   // ===== BOSKIE SZCZĘŚCIE =====
-  if(!miracleUsed && distance < miracleMargin && distance > -20){
+ if(startBlessing === "luck" && !miracleUsed && distance < miracleMargin && distance > -20){
 
       miracleUsed = true;
 
@@ -860,7 +918,7 @@ function updateCoins(){
        player.y + player.h > c.y){
 
         coinScore += 50;
-wallet += 50;
+wallet += 10;
 
 localStorage.setItem("piggyWallet", wallet);
 
@@ -986,6 +1044,23 @@ if (fpsTimer >= 1000){
 
   // ===== STOP WORLD WHEN NOT PLAYING =====
   if(gameState !== "play") return;
+  if(rocketMode){
+
+  rocketTimer -= dtSec;
+
+  // ciąg rakiety
+  player.vy -= 3200 * dtSec;
+  // rainbow trail
+  spawnDust(
+    player.x + player.w/2,
+    player.y + player.h + 8,
+    true
+  );
+
+  if(rocketTimer <= 0){
+    rocketMode = false;
+  }
+}
   // ===== SPRĘŻYNA SADŁA =====
   let spring = 120;
   let damping = 14;
@@ -1011,6 +1086,8 @@ function getRainbowColor(t){
   let b = Math.sin(a+4)*127+128;
   return `rgb(${r|0},${g|0},${b|0})`;
 }
+
+
 
 function shadeColor(color, percent){
 
@@ -2031,25 +2108,38 @@ function drawSettings(){
 
 
   // ===== BACK BUTTON =====
-  ctx.font="26px Arial";
 
-  for(let b of settingsButtons){
+for(let b of settingsButtons){
 
-    let pulse = 1 + Math.sin(uiTime*4)*0.03;
+  ctx.font = (b.text === "RESET STATS") ? "20px Arial" : "26px Arial";
 
-    ctx.save();
-    ctx.translate(GAME_WIDTH/2, b.y);
-    ctx.scale(pulse,pulse);
+  let pulse = 1 + Math.sin(uiTime*4) * (confirmReset ? 0.16 : 0.03);
 
-    ctx.strokeStyle="rgba(0,0,0,0.5)";
-    ctx.lineWidth=2;
-    ctx.strokeText(b.text,0,0);
+  ctx.save();
+  ctx.translate(GAME_WIDTH/2, b.y);
+  ctx.scale(pulse,pulse);
 
-    ctx.fillStyle="#ff9ecb";
-    ctx.fillText(b.text,0,0);
+  ctx.strokeStyle="rgba(0,0,0,0.5)";
+  ctx.lineWidth=2;
+let label = b.text;
 
-    ctx.restore();
-  }
+if(b.text === "RESET STATS" && confirmReset){
+  label = "CONFIRM RESET";
+}
+
+ctx.strokeText(label,0,0);
+
+if(b.text === "RESET STATS"){
+  ctx.fillStyle="#ff4444";
+}else{
+  ctx.fillStyle="#ff9ecb";
+}
+
+ctx.fillText(label,0,0);
+
+
+  ctx.restore();
+}
 }
 function drawOverlay(title, sub){
   // ciemne tło
@@ -2367,14 +2457,17 @@ function loop(now){
 
     update(dt);
     draw();
+
   }
   catch(e){
     console.error("GAME LOOP ERROR:", e);
   }
 
+
   requestAnimationFrame(loop);
 }
 
-
+gameState = "start";
+initPlatforms();
 
 requestAnimationFrame(loop);
