@@ -101,7 +101,7 @@ let vibrationEnabled = localStorage.getItem("vibration") !== "false";
 let showFPS = localStorage.getItem("showFPS") !== "false";
 
 // ---------- AUDIO ----------
-let music = new Audio("audio/techno_loop.mp3");
+let music = new Audio("audio/gamemusicloop.mp3");
 music.loop = true;
 music.volume = musicVolume;
 music.preload = "auto";
@@ -2488,3 +2488,4 @@ gameState = "start";
 initPlatforms();
 
 requestAnimationFrame(loop);
+
