@@ -645,7 +645,7 @@ function resetGame(){
   worldOffset = 0;
   score = 0;
 
-  dangerY = REAL_HEIGHT + 200;
+  dangerY = REAL_HEIGHT + 400;
   dangerSpeed = 0;
 
   miracleUsed = false;
