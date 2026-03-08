@@ -101,12 +101,13 @@ let vibrationEnabled = localStorage.getItem("vibration") !== "false";
 let showFPS = localStorage.getItem("showFPS") !== "false";
 
 // ---------- AUDIO ----------
-let music = new Audio("audio/gamemusicloop.mp3");
+let music = new Audio("audio/techno_loop.mp3");
 music.loop = true;
 music.volume = musicVolume;
 music.preload = "auto";
 let musicStarted = false;
-
+let pigDeath = new Audio("audio/Chrum 1 (mp3cut.net).mp3");pigDeath.volume = 0.8;
+let deathPlayed = false;
 
 // ---------- PLAYER ----------------------------------------------
 let player = {
@@ -219,8 +220,8 @@ let shootingStar = null;
 let nextShootingStar = 5 + Math.random()*8; // pierwsza za kilka sekund
 function createPlatform(y){
 
-  const minW = GAME_WIDTH * 0.14   // mała
-  const maxW = GAME_WIDTH * 0.36   // duża
+  const minW = GAME_WIDTH * 0.14;  // mała
+  const maxW = GAME_WIDTH * 0.36;  // duża
 
   let w = minW + Math.random()*(maxW - minW);
   let x = Math.random()*(GAME_WIDTH - w);
@@ -342,7 +343,7 @@ document.addEventListener("keydown", e=>{
   if(e.key==="ArrowRight") right=true;
   if(e.key==="ArrowUp") tryBoost();
 
-  
+
 
   if((e.key==="r"||e.key==="R") && gameState==="dead") resetGame();
 });
@@ -355,6 +356,10 @@ let touching = false;
 let touchX = 0;
 
 canvas.addEventListener("pointerdown", e => {
+   if(!musicStarted){
+    music.play().catch(()=>{});
+    musicStarted = true;
+  }
 
   const pos = getPointerPos(e);
   const mx = pos.x;
@@ -546,34 +551,27 @@ canvas.addEventListener("pointerdown", e => {
     return;
   }
 
-  // DEAD
-  if(gameState === "dead"){
+if(gameState === "dead"){
 
-    for(let b of gameOverButtons){
+  for(let b of gameOverButtons){
 
-      if(Math.abs(pos.y - b.y) < 25){
+    if(Math.abs(pos.y - b.y) < 25){
 
-        if(b.text === "RESTART"){
-          resetGame();
-          gameState = "play";
-        }
+      if(b.text === "RESTART"){
+        resetGame();
+        gameState = "play";
+      }
 
-        if(b.text === "MENU"){
-          gameState = "menu";
-        }
-
+      if(b.text === "MENU"){
+        gameState = "menu";
       }
 
     }
 
-    return;
   }
 
-  // START MUSIC
-  if(!musicStarted){
-    music.play().catch(()=>{});
-    musicStarted = true;
-  }
+}
+
 
   layoutUI();
   e.preventDefault();
@@ -653,6 +651,8 @@ function resetGame(){
   dangerY = REAL_HEIGHT + 400;
   dangerSpeed = 0;
 
+  deathPlayed = false;
+
   miracleUsed = false;
 
   left = false;
@@ -677,7 +677,7 @@ player.vy = -2000;
 if(startBlessing === "luck"){
   miracleUsed = false;
 }
-  
+
   initPlatforms();   // ← jedyne miejsce generacji monet
   coinScore = 0;
   gameState = "play";
@@ -747,7 +747,14 @@ function updateDanger(dtSec){
 
   // ===== ŚMIERĆ =====
   if(player.y + player.h > dangerY){
-      gameState = "dead";
+
+    if(!deathPlayed){
+        pigDeath.currentTime = 0;
+        pigDeath.play();
+        deathPlayed = true;
+    }
+
+    gameState = "dead";
     deathSlowMo = 0.12;
     deathSmokeTimer = 1.5;
     deathFlash = 1;
@@ -868,10 +875,10 @@ function updatePlatforms(dt){
 
         player.y = p.y - player.h;
         player.vy = jumpPower;
-      
+
         // zwykły splash sadła
         squashVel = -8;
-      
+
         //kurz przy lądowaniu
         spawnDust(player.x + player.w/2, player.y + player.h);
 
@@ -885,7 +892,7 @@ coyoteTimer = coyoteTime;
 break;
     }
   }
-  
+
 dustParticles.forEach(p=>{
   p.x += p.vx;
   p.y += p.vy;
@@ -1233,16 +1240,9 @@ if(shootingStar){
   ctx.restore();
 }
 }
-function drawCloud(x,y,s){
-  ctx.beginPath();
-  ctx.arc(x,y,s*0.5,0,Math.PI*2);
-  ctx.arc(x+s*0.6,y+5,s*0.45,0,Math.PI*2);
-  ctx.arc(x-s*0.6,y+8,s*0.4,0,Math.PI*2);
-  ctx.arc(x,y+15,s*0.55,0,Math.PI*2);
-  ctx.fill();
-}
+
   // ====== WORLD ======
- 
+
 function drawWorld(){
   ctx.save();
   ctx.translate(0, HUD);
@@ -1255,7 +1255,7 @@ function drawWorld(){
   drawDust();
   drawPanicBubble();
   drawDeathSmoke();
-  
+
   ctx.restore();
 }
 
@@ -1502,7 +1502,7 @@ const pigColor = pigColors[currentSkin] || "#ff9ecb";
   const cx = player.x + player.w/2;
   const cy = player.y + player.h/2;
   const baseSize = player.w * 0.65;
-  let idle = Math.sin(performance.now()*0.005) * 0.02;  
+  let idle = Math.sin(performance.now()*0.005) * 0.02;
   const scaleY = 1 + squash + idle;
   const scaleX = 1 - squash * 0.6;
 
@@ -1513,10 +1513,10 @@ ctx.scale(scaleX, scaleY);
 const x = 0;
 const y = 0;
 const size = baseSize;
-   
-  
+
+
   const r = size;
-    
+
     // ===== BOOST AURA =====
 if(boosting || boostAfterglow > 0){
 
@@ -1531,7 +1531,7 @@ if(boosting || boostAfterglow > 0){
   ctx.shadowBlur = 0;
 }
 
-// ===== CIEŃ ===== 
+// ===== CIEŃ =====
     ctx.fillStyle = "rgba(0,0,0,0.25)";
     ctx.beginPath();
     ctx.ellipse( x + size*0.15, y + size*0.9, size*0.7, size*0.25, 0, 0, Math.PI*2 );
@@ -1558,7 +1558,7 @@ headGrad.addColorStop(1, shadeColor(pigColor,-0.6));
 ctx.beginPath();
 ctx.moveTo(x - size*0.7, y - size*0.4);
 ctx.lineTo(x - size*0.7, y - size*1.2);
-ctx.lineTo(x - size*0.15, y - size*0.95); 
+ctx.lineTo(x - size*0.15, y - size*0.95);
 ctx.fill();
 
 // prawe
@@ -1569,16 +1569,16 @@ ctx.lineTo(x + size*0.7, y - size*1.2);
 ctx.lineTo(x + size*0.15, y - size*0.95);
 ctx.fill();
     //===== RYJ =====
-    let snoutGrad = ctx.createRadialGradient( x, y + size*0.3, size*0.1, x, y + size*0.3, size*0.6 ); 
+    let snoutGrad = ctx.createRadialGradient( x, y + size*0.3, size*0.1, x, y + size*0.3, size*0.6 );
     snoutGrad.addColorStop(0, "#ffb3c1");
     snoutGrad.addColorStop(1, "#e56b83"); ctx.fillStyle = snoutGrad;
-    ctx.beginPath(); 
+    ctx.beginPath();
     ctx.ellipse(x, y + size*0.35, size*0.55, size*0.35, 0, 0, Math.PI*2);
     ctx.fill();
-    // ===== NOSKI ===== 
-    ctx.fillStyle = "#2b2b2b"; 
+    // ===== NOSKI =====
+    ctx.fillStyle = "#2b2b2b";
     ctx.beginPath(); ctx.arc(x - size*0.18, y + size*0.35, size*0.1, 0, Math.PI*2);
-    ctx.arc(x + size*0.18, y + size*0.35, size*0.1, 0, Math.PI*2); 
+    ctx.arc(x + size*0.18, y + size*0.35, size*0.1, 0, Math.PI*2);
     ctx.fill();
 // ===== OCZY =====
 
@@ -1598,20 +1598,20 @@ let eyeOffsetY = size * 0.25;
 let tilt = panicLevel * size * 0.12 + Math.sin(uiTime * 10) * panicLevel * 1.5;
 
 let rageShake = Math.sin(uiTime * 40) * panicLevel * 2.5;
-    
-    
+
+
 ctx.fillStyle = "black";
 ctx.beginPath();
 ctx.arc(x - eyeOffsetX + rageShake, y - eyeOffsetY - tilt, eyeSize, 0, Math.PI*2);
 ctx.arc(x + eyeOffsetX + rageShake, y - eyeOffsetY + tilt, eyeSize, 0, Math.PI*2);
 ctx.fill();
-    // ===== POŁYSK W OCZACH ===== 
+    // ===== POŁYSK W OCZACH =====
     ctx.fillStyle = "white";
-    ctx.beginPath(); 
+    ctx.beginPath();
     ctx.arc(x - size*0.32, y - size*0.3, size*0.05, 0, Math.PI*2);
-    ctx.arc(x + size*0.32, y - size*0.3, size*0.05, 0, Math.PI*2); 
+    ctx.arc(x + size*0.32, y - size*0.3, size*0.05, 0, Math.PI*2);
     ctx.fill();
-    
+
     // ===== OKULARY (tylko dla pink) =====
 if(currentSkin === "pink"){
 
@@ -1638,7 +1638,7 @@ ctx.fill();
   ctx.stroke();
 
 }
-  
+
     // ===== POWIEKI =====
 if(blink > 0){
   ctx.fillStyle = pigColor;
@@ -1648,11 +1648,11 @@ if(blink > 0){
   ctx.fillRect(x - r*0.5, y - r*0.25, r*0.44, h);
   ctx.fillRect(x + r*0.06, y - r*0.25, r*0.44, h);
 }
-    
+
 
 
     ctx.shadowBlur = 0;
-    
+
     // OGONEK
 ctx.strokeStyle = "#ff9ecb";
 ctx.lineWidth = size * 0.18;
@@ -1671,7 +1671,7 @@ const wiggle = Math.sin(performance.now()*0.01) * size*0.05;
 ctx.arc(tailX + size*0.2 + wiggle, tailY, size*0.18, 0, Math.PI * 1.5);
 
 ctx.stroke();
-    
+
     ctx.restore();
   return pigColor;
 }
@@ -1802,7 +1802,7 @@ ctx.shadowColor = "#ff9ecb";
 
 ctx.fillStyle = "#ffd1dc";
 ctx.fillText("Best: "+bestScore, SAFE, SAFE+25);
-   
+
    // ===== WALLET =====
 ctx.shadowBlur = 20;
 ctx.shadowColor = "#ffd76a";
@@ -1873,7 +1873,7 @@ const cy = compass.y
   ctx.arc(cx, cy, r*0.15, 0, Math.PI*2);
   ctx.fillStyle = color;
   ctx.fill();
-  
+
 
 
 // obrót
@@ -1989,7 +1989,7 @@ function drawMenu(){
       ctx.shadowColor = "#ff6fa8";
       ctx.fillStyle = "#ff9ecb";
     }else{
-      ctx.shadowBlur = 0; 
+      ctx.shadowBlur = 0;
       ctx.fillStyle = "white";
     }
 
@@ -2170,8 +2170,8 @@ function drawOverlay(title, sub){
   const cy = REAL_HEIGHT / 2 - 40;
 
   // ================= DEAD =================
- 
-  
+
+
   if(gameState === "dead"){
 
     ctx.font = "bold 64px Arial";
@@ -2181,17 +2181,17 @@ function drawOverlay(title, sub){
     ctx.shadowColor = "#ff0000";
 
     ctx.fillStyle = "#ff1a1a";
-    
+
 
     ctx.shadowBlur = 0;
 
     // outline horror
     ctx.lineWidth = 3;
     ctx.strokeStyle = "#330000";
-    
+
     ctx.fillStyle = "#ff1a1a";
     ctx.fillText("GAME OVER", cx, cy);
-    
+
     // ===== REALISTIC 3D BACON =====
 if(baconMode){
 
@@ -2276,7 +2276,7 @@ for(let i=0;i<3;i++){
 
   ctx.restore();
 }
-    
+
     for(let b of gameOverButtons){
 
   let pulse = 1 + Math.sin(uiTime*4)*0.04;
@@ -2381,7 +2381,7 @@ function drawPauseOverlay(){
 
 }
 
- 
+
 function drawOverlayLayer(){
 
   if(gameState==="start") drawStartScreen();
@@ -2418,7 +2418,7 @@ function drawPauseButton(){
 
 function draw(){
   layoutUI();
-  
+
   ctx.clearRect(0,0,GAME_WIDTH,REAL_HEIGHT);
   drawBackground();
 
@@ -2488,4 +2488,3 @@ gameState = "start";
 initPlatforms();
 
 requestAnimationFrame(loop);
-
