@@ -377,10 +377,10 @@ canvas.addEventListener("pointerdown", e => {
           resetGame();
           gameState = "play";
         }
-        if(b.text === "SHOP"){
-  gameState = "shop";
-}
 
+        if(b.text === "SHOP"){
+          gameState = "shop";
+        }
 
         if(b.text === "SETTINGS"){
           gameState = "settings";
@@ -392,119 +392,134 @@ canvas.addEventListener("pointerdown", e => {
 
     return;
   }
-  
+
+  // SHOP
   if(gameState === "shop"){
 
- let startY = REAL_HEIGHT/2 - 60;
+    let startY = REAL_HEIGHT/2 - 60;
 
- for(let i=0;i<skins.length;i++){
+    for(let i=0;i<skins.length;i++){
 
-   let s = skins[i];
-   let y = startY + i*60;
+      let s = skins[i];
+      let y = startY + i*60;
 
-   if(Math.abs(my - y) < 25){
+      if(Math.abs(my - y) < 25){
 
-  if(ownedSkins.includes(s.id)){
+        if(ownedSkins.includes(s.id)){
 
-  // jeśli skin jest kupiony → ustaw jako aktywny
-  currentSkin = s.id;
-  localStorage.setItem("currentSkin", currentSkin);
+          currentSkin = s.id;
+          localStorage.setItem("currentSkin", currentSkin);
 
-}else if(wallet >= s.price){
+        }else if(wallet >= s.price){
 
-  // kup skin
-  wallet -= s.price;
-  ownedSkins.push(s.id);
+          wallet -= s.price;
+          ownedSkins.push(s.id);
 
-  localStorage.setItem("piggyWallet", wallet);
-  localStorage.setItem("ownedSkins", JSON.stringify(ownedSkins));
+          localStorage.setItem("piggyWallet", wallet);
+          localStorage.setItem("ownedSkins", JSON.stringify(ownedSkins));
 
-}
+        }
 
-   }
+      }
 
- }
+    }
 
- if(Math.abs(my - (REAL_HEIGHT/2 + 200)) < 25){
-   gameState = "menu";
- }
-
- return;
-}
-  
-  
-  if(gameState === "settings"){
-
-  // ===== VOLUME SLIDER =====
-  let barW = 200;
-  let barX = GAME_WIDTH/2 - barW/2;
-  let barY = REAL_HEIGHT/2 - 60;
-
-  if(my > barY-15 && my < barY+25 &&
-     mx > barX && mx < barX + barW){
-
-    musicVolume = (mx - barX) / barW;
-
-    if(musicVolume < 0) musicVolume = 0;
-    if(musicVolume > 1) musicVolume = 1;
-
-    music.volume = musicVolume;
-    localStorage.setItem("musicVolume", musicVolume);
-    return;
-  }
-
-  // ===== VIBRATION TOGGLE =====
-  if(Math.abs(my - (REAL_HEIGHT/2 + 10)) < 25){
-    vibrationEnabled = !vibrationEnabled;
-    localStorage.setItem("vibration", vibrationEnabled);
-    return;
-  }
-
-  // ===== FPS TOGGLE =====
-  if(Math.abs(my - (REAL_HEIGHT/2 + 60)) < 25){
-    showFPS = !showFPS;
-    localStorage.setItem("showFPS", showFPS);
-    return;
-  }
-
-  // ===== BACK =====
-  for(let b of settingsButtons){
-
-  if(Math.abs(my - b.y) < 25){
-
-    if(b.text === "RESET STATS"){
-
-  if(!confirmReset){
-    confirmReset = true;
-    return;
-  }
-
-  bestScore = 0;
-  wallet = 0;
-
-  ownedSkins = ["pink"];
-  currentSkin = "pink";
-
-  localStorage.removeItem("piggyBest");
-  localStorage.removeItem("piggyWallet");
-  localStorage.removeItem("ownedSkins");
-  localStorage.removeItem("currentSkin");
-
-  confirmReset = false;
-  }
-
-    if(b.text === "BACK"){
+    if(Math.abs(my - (REAL_HEIGHT/2 + 200)) < 25){
       gameState = "menu";
     }
 
+    return;
   }
 
-}
+  // SETTINGS
+  if(gameState === "settings"){
 
-  return;
-}
+    // ===== YES / NO RESET =====
+    if(confirmReset){
 
-  // PAUSE MENU
+      if(Math.abs(my - (REAL_HEIGHT/2 + 140)) < 25){
+
+        if(mx < GAME_WIDTH/2){
+
+          // YES
+          bestScore = 0;
+          wallet = 0;
+
+          ownedSkins = ["pink"];
+          currentSkin = "pink";
+
+          localStorage.removeItem("piggyBest");
+          localStorage.removeItem("piggyWallet");
+          localStorage.removeItem("ownedSkins");
+          localStorage.removeItem("currentSkin");
+
+        }
+
+        confirmReset = false;
+        return;
+      }
+
+    }
+
+    // ===== VOLUME SLIDER =====
+    let barW = 200;
+    let barX = GAME_WIDTH/2 - barW/2;
+    let barY = REAL_HEIGHT/2 - 60;
+
+    if(my > barY-15 && my < barY+25 &&
+       mx > barX && mx < barX + barW){
+
+      musicVolume = (mx - barX) / barW;
+
+      if(musicVolume < 0) musicVolume = 0;
+      if(musicVolume > 1) musicVolume = 1;
+
+      music.volume = musicVolume;
+      localStorage.setItem("musicVolume", musicVolume);
+      return;
+    }
+
+    // ===== VIBRATION =====
+    if(Math.abs(my - (REAL_HEIGHT/2 + 10)) < 25){
+      vibrationEnabled = !vibrationEnabled;
+      localStorage.setItem("vibration", vibrationEnabled);
+      return;
+    }
+
+    // ===== FPS =====
+    if(Math.abs(my - (REAL_HEIGHT/2 + 60)) < 25){
+      showFPS = !showFPS;
+      localStorage.setItem("showFPS", showFPS);
+      return;
+    }
+
+    // ===== BUTTONS =====
+    for(let b of settingsButtons){
+
+      if(Math.abs(my - b.y) < 25){
+
+        if(b.text === "RESET STATS"){
+
+          if(!confirmReset){
+            confirmReset = true;
+            return;
+          }
+
+        }
+
+        if(b.text === "BACK"){
+          confirmReset = false;
+          gameState = "menu";
+        }
+
+      }
+
+    }
+
+    return;
+  }
+
+  // PAUSE
   if(gameState === "pause"){
 
     for(let b of pauseButtons){
@@ -530,49 +545,42 @@ canvas.addEventListener("pointerdown", e => {
 
     return;
   }
-  
-if(gameState === "dead"){
 
-  const pos = getPointerPos(e);
+  // DEAD
+  if(gameState === "dead"){
 
-  for(let b of gameOverButtons){
+    for(let b of gameOverButtons){
 
-    if(Math.abs(pos.y - b.y) < 25){
+      if(Math.abs(pos.y - b.y) < 25){
 
-      if(b.text === "RESTART"){
-        resetGame();
-        gameState = "play";
-      }
+        if(b.text === "RESTART"){
+          resetGame();
+          gameState = "play";
+        }
 
-      if(b.text === "MENU"){
-        gameState = "menu";
+        if(b.text === "MENU"){
+          gameState = "menu";
+        }
+
       }
 
     }
 
+    return;
   }
 
-  return;
-}
-
-
-
-
-
-  // MUSIC START
+  // START MUSIC
   if(!musicStarted){
     music.play().catch(()=>{});
     musicStarted = true;
   }
-  
-  
+
   layoutUI();
   e.preventDefault();
 
-  // HUD kliknięcia
+  // HUD
   if(my <= HUD){
 
-    // PAUSE BUTTON
     let dxp = mx - pauseButton.x;
     let dyp = my - pauseButton.y;
 
@@ -581,9 +589,6 @@ if(gameState === "dead"){
       return;
     }
 
-
-
-    // BOOST
     const dx = mx - compass.x;
     const dy = my - compass.y;
 
@@ -2127,6 +2132,7 @@ if(b.text === "RESET STATS" && confirmReset){
   label = "CONFIRM RESET";
 }
 
+
 ctx.strokeText(label,0,0);
 
 if(b.text === "RESET STATS"){
@@ -2136,6 +2142,17 @@ if(b.text === "RESET STATS"){
 }
 
 ctx.fillText(label,0,0);
+    if(confirmReset){
+
+  ctx.font = "22px Arial";
+
+  ctx.fillStyle = "#ff4444";
+  ctx.fillText("YES", GAME_WIDTH/2 - 40, REAL_HEIGHT/2 + 140);
+
+  ctx.fillStyle = "#ff9ecb";
+  ctx.fillText("NO", GAME_WIDTH/2 + 40, REAL_HEIGHT/2 + 140);
+
+}
 
 
   ctx.restore();
