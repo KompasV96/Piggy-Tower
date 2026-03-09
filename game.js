@@ -93,9 +93,10 @@ function rollStartBlessing(){
 }
 // ---------- GAME STATE --------------------------------------------------------------
 
-// start | play | pause | dead | loading | menu | shop
-let gameState = "start";
-let loadingTimer = 0;
+// start | play | pause | dead | loading | menu | shop | settings
+let gameState = "loading";
+let loadingTimer = 5000; // sekundy
+let firstLoad = true;
 let musicVolume = Number(localStorage.getItem("musicVolume")) || 0.6;
 let vibrationEnabled = localStorage.getItem("vibration") !== "false";
 let showFPS = localStorage.getItem("showFPS") !== "false";
@@ -158,11 +159,16 @@ let worldOffset = 0;
 let score = 0;
 let bestScore = Number(localStorage.getItem("piggyBest")) || 0;
 let wallet = Number(localStorage.getItem("piggyWallet")) || 0;
+
+let shopScroll = 0;
+let lastTouchY = 0;
+
         let skins = [
  { id:"pink", price:0 },
  { id:"ninja", price:2500 },
  { id:"gold", price:5000 },
- { id:"space", price:7000 }
+ { id:"space", price:7000 },
+ { id:"love", price:9000 }
 ];
 
 let ownedSkins = JSON.parse(localStorage.getItem("ownedSkins")) || ["pink"];
@@ -367,7 +373,7 @@ let touchX = 0;
 
 //Pointerdown =====================================================================================
 canvas.addEventListener("pointerdown", e => {
-   
+ 
 
   const pos = getPointerPos(e);
   const mx = pos.x;
@@ -406,10 +412,19 @@ canvas.addEventListener("pointerdown", e => {
     return;
   }
 
-  // SHOP------------------------------------------
+// SHOP------------------------------------------
   if(gameState === "shop"){
 
-    let startY = REAL_HEIGHT/2 - 60;
+  touching = true;
+  lastTouchY = pos.y;
+
+  let startY = REAL_HEIGHT/2 - 60 + shopScroll;
+    shopScroll = Math.min(shopScroll, 80);
+shopScroll = Math.max(shopScroll, -skins.length * 60 + 120);
+  
+  
+
+   
 
     for(let i=0;i<skins.length;i++){
 
@@ -437,12 +452,15 @@ canvas.addEventListener("pointerdown", e => {
 
     }
 
-    if(Math.abs(my - (REAL_HEIGHT/2 + 200)) < 25){
-      gameState = "menu";
-    }
+    if(Math.abs(my - (REAL_HEIGHT - 40)) < 25){
+  gameState = "menu";
+}
 
     return;
   }
+  
+
+
 
   // SETTINGS--------------------------------------
   if(gameState === "settings"){
@@ -612,10 +630,20 @@ if(gameState === "dead"){
 });
 
 canvas.addEventListener("pointermove", e=>{
+
   if(!touching) return;
 
   const pos = getPointerPos(e);
-touchX = pos.x;
+
+  if(gameState === "shop"){
+
+    shopScroll += pos.y - lastTouchY;
+    lastTouchY = pos.y;
+
+  }else{
+    touchX = pos.x;
+  }
+
 });
 
 canvas.addEventListener("pointerup", ()=>{
@@ -646,6 +674,7 @@ function spawnInitialCoins(){
 
 
 function resetGame(){
+
 
   player.x = GAME_WIDTH/2 - 15;
   player.y = REAL_HEIGHT - 120;
@@ -728,8 +757,11 @@ function tryBoost(){
 function updateState(dt){
   if(gameState!=="loading") return false;
   loadingTimer -= dt;
-  if(loadingTimer<=0) gameState="start";
-  return true;
+  if(loadingTimer<=0){
+  gameState="start";
+  firstLoad = false;
+}
+    return true;
 }
 
 
@@ -997,6 +1029,11 @@ function update(dt){
 
    updateMusic();
 
+  
+    // ===== CAP DT (anti lag spike) --------------------------------------------------------------------------
+  if(dt > 50) dt = 50;
+  
+  
   fpsFrames++;
 fpsTimer += dt;
 
@@ -1005,8 +1042,7 @@ if (fpsTimer >= 1000){
   fpsFrames = 0;
   fpsTimer = 0;
 }
-  // ===== CAP DT (anti lag spike) --------------------------------------------------------------------------
-  if(dt > 50) dt = 50;
+
 
   const realDtSec = dt / 1000;
 
@@ -1563,7 +1599,31 @@ function getLookDir(){
   return {x, y};
 }
 
+function drawHeart(x,y,size){
 
+  ctx.beginPath();
+
+  ctx.moveTo(x, y);
+
+  ctx.bezierCurveTo(
+    x - size, y - size,
+    x - size*1.5, y + size*0.5,
+    x, y + size
+  );
+
+  ctx.bezierCurveTo(
+    x + size*1.5, y + size*0.5,
+    x + size, y - size,
+    x, y
+  );
+
+  ctx.fill();
+
+  // outline
+  ctx.lineWidth = size * 0.25;
+  ctx.strokeStyle = "white";
+  ctx.stroke();
+}
 
 //Rysowanie Gracza ==============================================================================================
   function drawPlayer(){
@@ -1576,7 +1636,8 @@ function getLookDir(){
  pink:"#ff9ecb",
  ninja:"#222",
  gold:"#ffd76a",
- space:"#66e0ff"
+ space:"#66e0ff",
+ love:"#ff7aa8",
 };
 
 const pigColor = pigColors[currentSkin] || "#ff9ecb";
@@ -1669,6 +1730,17 @@ ctx.fill();
     ctx.fill();
 // ===== OCZY =====------------------------------------------------------------------------------------------------
 
+    if(currentSkin === "love"){
+
+  ctx.fillStyle = "#ff3366";
+
+  drawHeart(x - size*0.35, y - size*0.25, size*0.22);
+  drawHeart(x + size*0.35, y - size*0.25, size*0.22);
+
+}
+else{
+    
+    
 let panicLevel = 0;
 
 if(lavaDist < 200){
@@ -1735,7 +1807,7 @@ if(blink > 0){
   ctx.fillRect(x - r*0.5, y - r*0.25, r*0.44, h);
   ctx.fillRect(x + r*0.06, y - r*0.25, r*0.44, h);
 }
-
+}
 
 
     ctx.shadowBlur = 0;
@@ -2061,6 +2133,87 @@ function drawStartScreen(){
   );
 }
 
+//Loading screen =========================================================================================
+function drawLoadingScreen(){
+ 
+
+  ctx.fillStyle = "rgba(0,0,0,0.7)";
+  ctx.fillRect(0,0,GAME_WIDTH,REAL_HEIGHT);
+
+  ctx.textAlign = "center";
+
+  // ===== TITLE =====
+  ctx.font = "bold 48px Arial";
+  ctx.fillStyle = "#ff9ecb";
+  ctx.fillText("PIGGY TOWER", GAME_WIDTH/2, REAL_HEIGHT/2 - 120);
+
+  ctx.font = "22px Arial";
+  ctx.fillStyle = "white";
+  ctx.fillText("Jump To The Stars", GAME_WIDTH/2, REAL_HEIGHT/2 - 80);
+
+  // ===== LOADING BAR =====
+  let progress = 1 - (loadingTimer / 5000);
+  progress = Math.max(0, Math.min(1, progress));
+  let barW = 200;
+  let barH = 10;
+  let barX = GAME_WIDTH/2 - barW/2;
+  let barY = REAL_HEIGHT/2 + 40;
+  
+  
+drawFlyingPig();
+
+  ctx.fillStyle = "#333";
+  ctx.fillRect(barX, barY, barW, barH);
+
+  ctx.fillStyle = "#ff9ecb";
+  ctx.fillRect(barX, barY, barW * progress, barH);
+
+  ctx.font = "18px Arial";
+  ctx.fillStyle = "white";
+  ctx.fillText("LOADING " + Math.floor(progress*100) + "%", GAME_WIDTH/2, barY + 30);
+
+  // ===== CREDIT =====
+  ctx.font = "14px Arial";
+  ctx.fillStyle = "rgba(255,255,255,0.6)";
+  ctx.fillText("By Kompas V9.6", GAME_WIDTH/2, REAL_HEIGHT - 60);
+  ctx.fillText("GPT Edition", GAME_WIDTH/2, REAL_HEIGHT - 40);
+  
+
+}
+  
+  
+ //Animacja piggy hero lecącą na księżyc =========================================================================
+ function drawFlyingPig(){
+
+  let progress = 1 - (loadingTimer / 5000);
+  progress = Math.max(0, Math.min(1, progress));
+
+  let startX = GAME_WIDTH/2 - 15;
+  let startY = REAL_HEIGHT/2 + 40;
+
+  let moonX = GAME_WIDTH * 0.78 - 15;
+  let moonY = 110;
+
+  let x = startX + (moonX - startX) * progress;
+  let y = startY + (moonY - startY) * progress;
+
+  // łuk lotu
+  y -= Math.sin(progress * Math.PI) * 80;
+
+  // zapamiętaj pozycję gracza
+  let oldX = player.x;
+  let oldY = player.y;
+
+  player.x = x;
+  player.y = y;
+
+  drawPlayer();
+
+  // przywróć
+  player.x = oldX;
+  player.y = oldY;
+}
+
 
 //Rysowanie menu ==================================================================================================
 function drawMenu(){
@@ -2127,6 +2280,7 @@ function drawMenu(){
 
 //Rysowanie sklepu ==============================================================================================
 function drawShop(){
+  
 
  ctx.fillStyle="rgba(0,0,0,0.65)";
  ctx.fillRect(0,0,GAME_WIDTH,REAL_HEIGHT);
@@ -2139,37 +2293,48 @@ function drawShop(){
  ctx.fillText("SHOP", GAME_WIDTH/2, REAL_HEIGHT/2 - 160);
 
  ctx.font="26px Arial";
+  
+  
+    // okno skinów
+ctx.save();
+ctx.beginPath();
+ctx.rect(0, REAL_HEIGHT/2 - 80, GAME_WIDTH, 200);
+ctx.clip();
 
- let startY = REAL_HEIGHT/2 - 60;
+// RYSOWANIE SKINÓW
+let startY = REAL_HEIGHT/2 - 60 + shopScroll;
 
- for(let i=0;i<skins.length;i++){
+for(let i=0;i<skins.length;i++){
 
-   let s = skins[i];
-   let y = startY + i*60;
+  let s = skins[i];
+  let y = startY + i*60;
 
-   let owned = ownedSkins.includes(s.id);
+  let owned = ownedSkins.includes(s.id);
 
-   let text;
+  let text;
 
-   if(owned){
-     text = s.id.toUpperCase() + " ✓";
-   }else{
-     text = s.id.toUpperCase() + "  $" + s.price;
-   }
+  if(owned){
+    text = s.id.toUpperCase() + " ✓";
+  }else{
+    text = s.id.toUpperCase() + "  $" + s.price;
+  }
 
-   ctx.fillStyle="white";
+  ctx.fillStyle="white";
 
-   if(currentSkin === s.id){
-     ctx.fillStyle="#ff9ecb";
-   }
+  if(currentSkin === s.id){
+    ctx.fillStyle="#ff9ecb";
+  }
 
-   ctx.fillText(text, GAME_WIDTH/2, y);
- }
+  ctx.fillText(text, GAME_WIDTH/2, y);
+}
 
- ctx.fillStyle="#ff9ecb";
- ctx.fillText("BACK", GAME_WIDTH/2, REAL_HEIGHT/2 + 200);
+ctx.restore();
+  
+  ctx.font="26px Arial";
+ctx.fillStyle="#ff9ecb";
+ctx.fillText("BACK", GAME_WIDTH/2, REAL_HEIGHT - 40);
 
- drawWalletTopRight();
+
 }
 
 
@@ -2181,13 +2346,13 @@ function drawSettings(){
 
   ctx.textAlign="center";
 
-  // ===== TITLE =====----------------------------------------------------------------
+  // ===== TITLE =====
   ctx.font="bold 48px Arial";
   ctx.fillStyle="white";
   ctx.fillText("SETTINGS", GAME_WIDTH/2, REAL_HEIGHT/2 - 160);
 
 
-  // ===== MUSIC VOLUME =====----------------------------------------------------------
+  // ===== MUSIC VOLUME =====
   ctx.font="22px Arial";
   ctx.fillStyle="white";
   ctx.fillText("MUSIC VOLUME", GAME_WIDTH/2, REAL_HEIGHT/2 - 90);
@@ -2197,22 +2362,22 @@ function drawSettings(){
   let barX = GAME_WIDTH/2 - barW/2;
   let barY = REAL_HEIGHT/2 - 60;
 
-  // background bar-------------------------------------------------------------------
+  // background bar
   ctx.fillStyle="#333";
   ctx.fillRect(barX, barY, barW, barH);
 
-  // filled bar------------------------------------------------------------------------
+  // filled bar
   ctx.fillStyle="#ff9ecb";
   ctx.fillRect(barX, barY, barW * musicVolume, barH);
 
-  // knob-----------------------------------------------------------------------------
+  // knob
   ctx.beginPath();
   ctx.arc(barX + barW * musicVolume, barY + barH/2, 8, 0, Math.PI*2);
   ctx.fillStyle="white";
   ctx.fill();
 
 
-  // ===== VIBRATION =====--------------------------------------------------------------
+  // ===== VIBRATION =====
   ctx.font="24px Arial";
   ctx.fillStyle="white";
 
@@ -2229,7 +2394,7 @@ ctx.fillText(fpsText, GAME_WIDTH/2, REAL_HEIGHT/2 + 60);
   drawWalletTopRight();
 
 
-  // ===== BUTTONS =====-------------------------------------------------------------------
+  // ===== BUTTONS =====
   for(let b of settingsButtons){
 
     ctx.font = (b.text === "RESET STATS") ? "20px Arial" : "26px Arial";
@@ -2263,7 +2428,7 @@ ctx.fillText(fpsText, GAME_WIDTH/2, REAL_HEIGHT/2 + 60);
   }
 
 
-  // ===== CONFIRM RESET OPTIONS =====------------------------------------------------------------
+  // ===== CONFIRM RESET OPTIONS =====
   if(confirmReset){
 
     ctx.font = "22px Arial";
@@ -2508,6 +2673,9 @@ function drawPauseOverlay(){
 
 //Rysowanie stron ================================================================================================
 function drawOverlayLayer(){
+  
+  if(gameState === "loading")
+  drawLoadingScreen();
 
   if(gameState==="start") drawStartScreen();
 
@@ -2521,9 +2689,7 @@ function drawOverlayLayer(){
   if(gameState==="dead")
     drawOverlay("GAME OVER","tap to restart");
 
-  if(gameState==="loading")
-    drawOverlay("loading...","");
-
+ 
   if(gameState==="pause")
     drawPauseOverlay();
 
@@ -2593,12 +2759,19 @@ if(showFPS){
 }
 // ================= LOOP =============================================================================================
 
-let lastTime=performance.now();
+let lastTime = performance.now();
+
 function loop(now){
+
+  if(document.hidden){
+    requestAnimationFrame(loop);
+    return;
+  }
+
   try{
-    let dt=now-lastTime;
-    if(dt>50) dt=50;
-    lastTime=now;
+    let dt = now - lastTime;
+    if(dt > 50) dt = 50;
+    lastTime = now;
 
     update(dt);
     draw();
@@ -2608,11 +2781,8 @@ function loop(now){
     console.error("GAME LOOP ERROR:", e);
   }
 
-
   requestAnimationFrame(loop);
 }
 
-gameState = "start";
-initPlatforms();
-
+gameState = "loading";
 requestAnimationFrame(loop);
