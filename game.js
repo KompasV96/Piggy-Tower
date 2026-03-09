@@ -100,7 +100,7 @@ let musicVolume = Number(localStorage.getItem("musicVolume")) || 0.6;
 let vibrationEnabled = localStorage.getItem("vibration") !== "false";
 let showFPS = localStorage.getItem("showFPS") !== "false";
 
-// ---------- AUDIO ----------
+// ---------- AUDIO ---------------------------------------------------------------------
 let music = new Audio("audio/techno_loop.mp3");
 music.loop = true;
 music.volume = musicVolume;
@@ -108,6 +108,8 @@ music.preload = "auto";
 let musicStarted = false;
 let pigDeath = new Audio("audio/Chrum 1 (mp3cut.net).mp3");pigDeath.volume = 0.8;
 let deathPlayed = false;
+let coinSound = new Audio("audio/coinsding.mp3");
+coinSound.volume = 0.7;
 
 // ---------- PLAYER ------------------------------------------------------------------
 let player = {
@@ -950,7 +952,9 @@ function updateCoins(){
        player.y + player.h > c.y){
 
         coinScore += 50;
-wallet += 10;
+        wallet += 10;
+        
+        playCoin();
 
 localStorage.setItem("piggyWallet", wallet);
 
@@ -991,6 +995,7 @@ function updateMusic(){
 //DELTA Time ===============================================================================================
 function update(dt){
 
+   updateMusic();
 
   fpsFrames++;
 fpsTimer += dt;
@@ -1134,7 +1139,6 @@ if (fpsTimer >= 1000){
   updateCoins();
   recyclePlatforms();
   updateScore();
-   updateMusic();
   updateDanger(dtSec);
 }
 
@@ -1168,6 +1172,14 @@ function shadeColor(color, percent){
   ).toString(16).slice(1);
 }
 
+
+function playCoin(){
+
+  const s = coinSound.cloneNode(); // pozwala nakładać dźwięki
+  s.volume = coinSound.volume;
+  s.play().catch(()=>{});
+
+}
 
 //Szejk ekran ======================================================================================================
 function getScreenShakeOffset(){
@@ -2169,13 +2181,13 @@ function drawSettings(){
 
   ctx.textAlign="center";
 
-  // ===== TITLE =====-----------------------------------------------------------------------------------------
+  // ===== TITLE =====----------------------------------------------------------------
   ctx.font="bold 48px Arial";
   ctx.fillStyle="white";
   ctx.fillText("SETTINGS", GAME_WIDTH/2, REAL_HEIGHT/2 - 160);
 
 
-  // ===== MUSIC VOLUME =====----------------------------------------------------------------------------------------
+  // ===== MUSIC VOLUME =====----------------------------------------------------------
   ctx.font="22px Arial";
   ctx.fillStyle="white";
   ctx.fillText("MUSIC VOLUME", GAME_WIDTH/2, REAL_HEIGHT/2 - 90);
@@ -2185,83 +2197,85 @@ function drawSettings(){
   let barX = GAME_WIDTH/2 - barW/2;
   let barY = REAL_HEIGHT/2 - 60;
 
-  // background bar ---------------------------------------------------------------------------------------------------
+  // background bar-------------------------------------------------------------------
   ctx.fillStyle="#333";
   ctx.fillRect(barX, barY, barW, barH);
 
-  // filled bar -------------------------------------------------------------------------------------------------------
+  // filled bar------------------------------------------------------------------------
   ctx.fillStyle="#ff9ecb";
   ctx.fillRect(barX, barY, barW * musicVolume, barH);
 
-  // knob ----------------------------------------------------------------------------------------------------------
+  // knob-----------------------------------------------------------------------------
   ctx.beginPath();
   ctx.arc(barX + barW * musicVolume, barY + barH/2, 8, 0, Math.PI*2);
   ctx.fillStyle="white";
   ctx.fill();
 
 
-  // ===== VIBRATION =====---------------------------------------------------------------------------------------------
+  // ===== VIBRATION =====--------------------------------------------------------------
   ctx.font="24px Arial";
   ctx.fillStyle="white";
 
   let vibText = vibrationEnabled ? "VIBRATION: ON" : "VIBRATION: OFF";
-
   ctx.fillText(vibText, GAME_WIDTH/2, REAL_HEIGHT/2 + 10);
 
 
-  // ===== FPS =====--------------------------------------------------------------------------------------------
+ 
+  // ===== FPS =====
+let fpsText = showFPS ? "FPS: ON" : "FPS: OFF";
+ctx.fillText(fpsText, GAME_WIDTH/2, REAL_HEIGHT/2 + 60);
 
-  ctx.fillText(fpsText, GAME_WIDTH/2, REAL_HEIGHT/2 + 60);
-   drawWalletTopRight();
+
+  drawWalletTopRight();
 
 
-  // ===== BACK BUTTON =====-------------------------------------------------------------------------------------------
+  // ===== BUTTONS =====-------------------------------------------------------------------
+  for(let b of settingsButtons){
 
-for(let b of settingsButtons){
+    ctx.font = (b.text === "RESET STATS") ? "20px Arial" : "26px Arial";
 
-  ctx.font = (b.text === "RESET STATS") ? "20px Arial" : "26px Arial";
+    let pulse = 1 + Math.sin(uiTime*4) * (confirmReset ? 0.16 : 0.03);
 
-  let pulse = 1 + Math.sin(uiTime*4) * (confirmReset ? 0.16 : 0.03);
+    ctx.save();
+    ctx.translate(GAME_WIDTH/2, b.y);
+    ctx.scale(pulse,pulse);
 
-  ctx.save();
-  ctx.translate(GAME_WIDTH/2, b.y);
-  ctx.scale(pulse,pulse);
+    ctx.strokeStyle="rgba(0,0,0,0.5)";
+    ctx.lineWidth=2;
 
-  ctx.strokeStyle="rgba(0,0,0,0.5)";
-  ctx.lineWidth=2;
-let label = b.text;
+    let label = b.text;
 
-if(b.text === "RESET STATS" && confirmReset){
-  label = "CONFIRM RESET";
+    if(b.text === "RESET STATS" && confirmReset){
+      label = "CONFIRM RESET";
+    }
+
+    ctx.strokeText(label,0,0);
+
+    if(b.text === "RESET STATS"){
+      ctx.fillStyle="#ff4444";
+    }else{
+      ctx.fillStyle="#ff9ecb";
+    }
+
+    ctx.fillText(label,0,0);
+
+    ctx.restore();
+  }
+
+
+  // ===== CONFIRM RESET OPTIONS =====------------------------------------------------------------
+  if(confirmReset){
+
+    ctx.font = "22px Arial";
+
+    ctx.fillStyle = "#ff4444";
+    ctx.fillText("YES", GAME_WIDTH/2 - 40, REAL_HEIGHT/2 + 140);
+
+    ctx.fillStyle = "#ff9ecb";
+    ctx.fillText("NO", GAME_WIDTH/2 + 40, REAL_HEIGHT/2 + 140);
+
+  }
 }
-
-
-ctx.strokeText(label,0,0);
-
-if(b.text === "RESET STATS"){
-  ctx.fillStyle="#ff4444";
-}else{
-  ctx.fillStyle="#ff9ecb";
-}
-
-ctx.fillText(label,0,0);
-    if(confirmReset){
-
-  ctx.font = "22px Arial";
-
-  ctx.fillStyle = "#ff4444";
-  ctx.fillText("YES", GAME_WIDTH/2 - 40, REAL_HEIGHT/2 + 140);
-
-  ctx.fillStyle = "#ff9ecb";
-  ctx.fillText("NO", GAME_WIDTH/2 + 40, REAL_HEIGHT/2 + 140);
-
-}
-
-
-  ctx.restore();
-}
-}
-
 
 //GameoverSCREEN =========================================================================================
 function drawOverlay(title, sub){
