@@ -1403,7 +1403,7 @@ function drawDust(){
     let r = c.r * pulse;
 
     // ===== GLOW =====
-    ctx.shadowBlur = 18 + Math.sin(uiTime*8 + c.y)*6;
+    ctx.shadowBlur = 4 + Math.sin(uiTime*8 + c.y)*6;
     ctx.shadowColor = "rgba(255,215,0,0.7)";
 
     // ===== GRADIENT MONETY =====
@@ -1524,7 +1524,7 @@ if(boosting || boostAfterglow > 0){
     ? boostVisualTime
     : 1 - (boostAfterglow / BOOST_AFTERGLOW_TIME);
 
-  ctx.shadowBlur = 30;
+  ctx.shadowBlur = 15;
   ctx.shadowColor = getRainbowColor(t);
 
 }else{
@@ -1590,7 +1590,7 @@ if(lavaDist < 200){
   panicLevel = panicLevel * panicLevel;
 }
 
-let eyeSize = size * (0.16 + panicLevel * 0.25);
+let eyeSize = size * (0.19 + panicLevel * 0.28);
 
 let eyeOffsetX = size * 0.35;
 let eyeOffsetY = size * 0.25;
@@ -1777,7 +1777,7 @@ function drawWalletTopRight(){
   ctx.textAlign = "right";
   ctx.textBaseline = "top";
 
-  ctx.shadowBlur = 15;
+  ctx.shadowBlur = 4;
   ctx.shadowColor = "#ffd76a";
 
   ctx.fillStyle = "#ffd76a";
@@ -1791,20 +1791,20 @@ function drawWalletTopRight(){
 ctx.textBaseline="top";
 ctx.font="20px Arial";
 
-ctx.shadowBlur = 20;
+ctx.shadowBlur = 4;
 ctx.shadowColor = "#ff6fa8";   // różowy neon
 
 ctx.fillStyle = "#ff9ecb";
 ctx.fillText("Score: "+score, SAFE, SAFE);
 
-ctx.shadowBlur = 6;
+ctx.shadowBlur = 4;
 ctx.shadowColor = "#ff9ecb";
 
 ctx.fillStyle = "#ffd1dc";
 ctx.fillText("Best: "+bestScore, SAFE, SAFE+25);
 
    // ===== WALLET =====
-ctx.shadowBlur = 20;
+ctx.shadowBlur = 4;
 ctx.shadowColor = "#ffd76a";
 
 ctx.fillStyle = "#ffd76a";
@@ -1985,7 +1985,7 @@ function drawMenu(){
 
     // glow tylko dla PLAY
     if(b.text === "PLAY"){
-      ctx.shadowBlur = 20;
+      ctx.shadowBlur = 4;
       ctx.shadowColor = "#ff6fa8";
       ctx.fillStyle = "#ff9ecb";
     }else{
@@ -2177,7 +2177,7 @@ function drawOverlay(title, sub){
     ctx.font = "bold 64px Arial";
 
     // czerwony glow
-    ctx.shadowBlur = 25;
+    ctx.shadowBlur = 4;
     ctx.shadowColor = "#ff0000";
 
     ctx.fillStyle = "#ff1a1a";
