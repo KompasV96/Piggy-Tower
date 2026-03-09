@@ -1,5 +1,5 @@
 
-// ---------- CANVAS ----------
+// ---------- CANVAS ---------------------------------------------------------
 const GAME_WIDTH = 360;
 const GAME_HEIGHT = 640;
 const HUD = 70;
@@ -91,7 +91,7 @@ function rollStartBlessing(){
   }
 
 }
-// ---------- GAME STATE --------------------------------------
+// ---------- GAME STATE --------------------------------------------------------------
 
 // start | play | pause | dead | loading | menu | shop
 let gameState = "start";
@@ -109,7 +109,7 @@ let musicStarted = false;
 let pigDeath = new Audio("audio/Chrum 1 (mp3cut.net).mp3");pigDeath.volume = 0.8;
 let deathPlayed = false;
 
-// ---------- PLAYER ----------------------------------------------
+// ---------- PLAYER ------------------------------------------------------------------
 let player = {
   x: GAME_WIDTH/2 - 15,
   y: REAL_HEIGHT - 120,
@@ -128,7 +128,7 @@ let boostButton = {
   r: 28
 };
 
-// ---------- PHYSICS ----------------------------------------------
+// ---------- PHYSICS ----------------------------------------------------------------
 let gravity = 2400;
 let jumpPower = -1000;
 let maxFall = 1400;
@@ -151,7 +151,7 @@ let baconSpawnTime = 0;
 let deathSlowMo = 0;
 let dustParticles = [];
 let confirmReset = false;
-// ---------- SCORE ------------------------------------------------
+// ---------- SCORE ------------------------------------------------------------------
 let worldOffset = 0;
 let score = 0;
 let bestScore = Number(localStorage.getItem("piggyBest")) || 0;
@@ -169,28 +169,28 @@ let fps = 0;
 let fpsTimer = 0;
 let fpsFrames = 0;
 
-// ---------- DANGER ----------------------------------------------------
+// ---------- DANGER ----------------------------------------------------------------
 let dangerY = REAL_HEIGHT + 200;
 let dangerSpeed = 120;
 
 
 
-// ---------- PLATFORMS ----------------------------------------------------
+// ---------- PLATFORMS -------------------------------------------------------------
 const PLATFORM_COUNT = 20;
 const PLATFORM_GAP = GAME_HEIGHT * 0.22;
 let platforms = [];
 
-// ---------- COINS -----------------------------------------------------------
+// ---------- COINS ----------------------------------------------------------------
 let coins = [];
 let coinScore = 0;
 
-// ---------- boskie szczescie --------------------------------------------------
+// ---------- boskie szczescie ------------------------------------------------------
 
 let miracleMargin = 25; // ile px od lawy to „o włos”
 let miraclePower = 5 * PLATFORM_GAP; // 5 platform w górę
 let miracleUsed = false;
 
-// BOOST (jednorazowy tryb)
+// BOOST (jednorazowy tryb)------------------------------------------------------------
 let boostCharges = 3;
 const maxBoostCharges = 3;
 let boosting = false;
@@ -229,6 +229,7 @@ function createPlatform(y){
   return { x, y, w, h: GAME_HEIGHT * 0.03 };
 }
 
+//-------MENU---------------------------------------------------------------------------
 
 let menuButtons = [
   { text:"PLAY", y: REAL_HEIGHT/2 },
@@ -249,8 +250,9 @@ let settingsButtons = [
   { text:"BACK", y: REAL_HEIGHT/2 + 160 }
 ];
 
+//Funkcje----------------------------------------------------------------------------------
 
-
+//platformy ==========================================
 function initPlatforms(){
   platforms = [];
 
@@ -269,6 +271,8 @@ platforms.push({
   spawnInitialCoins();
 }
 
+
+//kurz ===============================================
 function spawnDust(x, y, rainbow=false){
 
   for(let i = 0; i < 6; i++){
@@ -287,7 +291,7 @@ function spawnDust(x, y, rainbow=false){
   }
 }
 
-
+//gwiazdy ==============================================
 function initStars(){
   stars = [];
 
@@ -303,6 +307,9 @@ function initStars(){
 }
 
 initStars();
+
+
+//platformy sie odnawiają =============================
 function recyclePlatforms(){
   let highest = Infinity;
 
@@ -320,7 +327,7 @@ function recyclePlatforms(){
       p.y = np.y;
       p.w = np.w;
 
-      // 💰 spawn monety NA NOWEJ platformie
+      // 💰 spawn monety NA NOWEJ platformie =================
 
       if(Math.random() < 0.4){
         coins.push({
@@ -335,7 +342,7 @@ function recyclePlatforms(){
 
 initPlatforms();
 
-// ---------- INPUT ----------
+// ---------- INPUT ---------------------------------------------------------------------
 let left=false, right=false, touchSide=0;
 
 document.addEventListener("keydown", e=>{
@@ -355,23 +362,22 @@ document.addEventListener("keyup", e=>{
 let touching = false;
 let touchX = 0;
 
+
+//Pointerdown =====================================================================================
 canvas.addEventListener("pointerdown", e => {
-   if(!musicStarted){
-    music.play().catch(()=>{});
-    musicStarted = true;
-  }
+   
 
   const pos = getPointerPos(e);
   const mx = pos.x;
   const my = pos.y;
 
-  // START SCREEN
+  // START SCREEN---------------------------------------
   if(gameState === "start"){
     gameState = "menu";
     return;
   }
 
-  // MENU
+  // MENU-----------------------------------------------
   if(gameState === "menu"){
 
     for(let b of menuButtons){
@@ -398,7 +404,7 @@ canvas.addEventListener("pointerdown", e => {
     return;
   }
 
-  // SHOP
+  // SHOP------------------------------------------
   if(gameState === "shop"){
 
     let startY = REAL_HEIGHT/2 - 60;
@@ -436,10 +442,10 @@ canvas.addEventListener("pointerdown", e => {
     return;
   }
 
-  // SETTINGS
+  // SETTINGS--------------------------------------
   if(gameState === "settings"){
 
-    // ===== YES / NO RESET =====
+    // ===== YES / NO RESET =============================
     if(confirmReset){
 
       if(Math.abs(my - (REAL_HEIGHT/2 + 140)) < 25){
@@ -466,7 +472,7 @@ canvas.addEventListener("pointerdown", e => {
 
     }
 
-    // ===== VOLUME SLIDER =====
+    // ===== VOLUME SLIDER =================================
     let barW = 200;
     let barX = GAME_WIDTH/2 - barW/2;
     let barY = REAL_HEIGHT/2 - 60;
@@ -484,21 +490,21 @@ canvas.addEventListener("pointerdown", e => {
       return;
     }
 
-    // ===== VIBRATION =====
+    // ===== VIBRATION =====================================
     if(Math.abs(my - (REAL_HEIGHT/2 + 10)) < 25){
       vibrationEnabled = !vibrationEnabled;
       localStorage.setItem("vibration", vibrationEnabled);
       return;
     }
 
-    // ===== FPS =====
+    // ===== FPS ============================================
     if(Math.abs(my - (REAL_HEIGHT/2 + 60)) < 25){
       showFPS = !showFPS;
       localStorage.setItem("showFPS", showFPS);
       return;
     }
 
-    // ===== BUTTONS =====
+    // ===== BUTTONS ==========================================
     for(let b of settingsButtons){
 
       if(Math.abs(my - b.y) < 25){
@@ -524,7 +530,7 @@ canvas.addEventListener("pointerdown", e => {
     return;
   }
 
-  // PAUSE
+  // PAUSE ====================================================
   if(gameState === "pause"){
 
     for(let b of pauseButtons){
@@ -576,7 +582,7 @@ if(gameState === "dead"){
   layoutUI();
   e.preventDefault();
 
-  // HUD
+  // HUD ===================================================
   if(my <= HUD){
 
     let dxp = mx - pauseButton.x;
@@ -597,7 +603,7 @@ if(gameState === "dead"){
     return;
   }
 
-  // MOVEMENT
+  // MOVEMENT ==============================================
   touching = true;
   touchX = mx;
 
@@ -617,7 +623,7 @@ canvas.addEventListener("pointerup", ()=>{
 canvas.addEventListener("pointercancel", ()=>{
   touching = false;
 });
-// ---------- RESET ----------
+// ---------- RESET ---------------------------------------------------------------------------------
 function spawnInitialCoins(){
 
   coins = [];
@@ -685,7 +691,9 @@ if(startBlessing === "luck"){
   boostCharges = maxBoostCharges;
   boostLockTimer = 0;
   }
-// ================= UPDATE =================
+// ================= UPDATE ======================================================================
+
+//BOST ==================================================================
 function tryBoost(){
 
   if(boostCharges <= 0 || gameState!=="play") return;
@@ -696,12 +704,12 @@ function tryBoost(){
   deathSlowMo = 0.04;
   boostVisualTime = 0;   // ← START ANIMACJI
 
-   // 🌈 BOOST BLAST
+   // 🌈 BOOST BLAST -------------------------------------------------
   spawnDust(player.x + player.w/2, player.y + player.h + 30, true);
   spawnDust(player.x + player.w/2, player.y + player.h + 30, true);
   spawnDust(player.x + player.w/2, player.y + player.h + 30, true);
 
-  // lekki startowy kop
+  // lekki startowy kop -----------------------------------------------
   if(player.vy > 0) player.vy *= 0.3;
   player.vy = -900;
 
@@ -711,8 +719,10 @@ function tryBoost(){
   vibrate(40);
   boostFlash = 1;
   squashVel = -18;
+ 
 }
 
+//Stan gry =============================================================
 function updateState(dt){
   if(gameState!=="loading") return false;
   loadingTimer -= dt;
@@ -720,20 +730,24 @@ function updateState(dt){
   return true;
 }
 
+
+//Punkty ================================================================
 function updateScore(){
   score = Math.floor(worldOffset/12) + coinScore;
 }
 
+
+//Lawa ================================================================================================
 function updateDanger(dtSec){
 
-  // prędkość lawy
+  // prędkość lawy -------------------------------------------------------------------------
   dangerSpeed = 200 + worldOffset / 2000;
   dangerY -= dangerSpeed * dtSec;
 
-  // odległość lawy od nóg gracza
+  // odległość lawy od nóg gracza ------------------------------------------------------------
   let distance = dangerY - (player.y + player.h);
 
-  // ===== BOSKIE SZCZĘŚCIE =====
+  // ===== BOSKIE SZCZĘŚCIE ------------------------------------------------------------------
  if(startBlessing === "luck" && !miracleUsed && distance < miracleMargin && distance > -20){
 
       miracleUsed = true;
@@ -745,7 +759,7 @@ function updateDanger(dtSec){
       player.vy = -Math.sqrt(2 * gravity * miraclePower);
   }
 
-  // ===== ŚMIERĆ =====
+  // ===== ŚMIERĆ ------------------------------------------------------------
   if(player.y + player.h > dangerY){
 
     if(!deathPlayed){
@@ -758,23 +772,25 @@ function updateDanger(dtSec){
     deathSlowMo = 0.12;
     deathSmokeTimer = 1.5;
     deathFlash = 1;
-    // MEGA IMPACT
+    
+    // MEGA IMPACT ---------------------------------------------------------
     screenShakeTime = 0.45;
     screenShakePower = 55;
 
-    // wibracja pattern: krótka-mocna-przerwa-krótka
+    // wibracja pattern: krótka-mocna-przerwa-krótka -----------------------
     vibrate([120, 40, 90]);
     baconMode = Math.random() < 0.15; // 15% szansy
     baconSpawnTime = 0; // reset animacji
-    // LAVA SPLASH
-lavaSplash = {
+    
+    // LAVA SPLASH ---------------------------------------------------------
+    lavaSplash = {
   x: player.x + player.w/2,
   y: dangerY,
   time: 0,
   particles: []
 };
 
-// generuj cząstki
+// generuj cząstki ---------------------------------------------------------
 for(let i=0;i<20;i++){
   lavaSplash.particles.push({
     vx: (Math.random()*2-1) * 200,
@@ -792,12 +808,13 @@ for(let i=0;i<20;i++){
   }
 }
 
+//Gracz ===============================================================================
 function updatePlayer(dt,dtSec){
   player.lastY = player.y;
-  // sprawdzanie ziemi
+  // sprawdzanie ziemi -------------------------------------------------
 onGround = false;
 
-  // ruch
+  // ruch --------------------------------------------------------------
  let targetSpeed = 0;
 
 if(left) targetSpeed = -speedKeyboard;
@@ -807,10 +824,10 @@ else if(touching){
  let mid = GAME_WIDTH/2;
   let dist = (touchX - mid) / mid; // -1..1
 
-  // martwa strefa (stabilność)
+  // martwa strefa (stabilność) ----------------------------------------
   if(Math.abs(dist) < 0.08) dist = 0;
 
-  // krzywa responsywności
+  // krzywa responsywności --------------------------------------------
   dist = Math.sign(dist) * Math.pow(Math.abs(dist), 0.65);
 
   targetSpeed = dist * speedTouch * 1.35;
@@ -828,13 +845,13 @@ player.vx += (targetSpeed - player.vx) * 14 * control * dtSec;
   if(player.x<0) player.x=0;
   if(player.x+player.w>GAME_WIDTH) player.x=GAME_WIDTH-player.w;
 
-  // grawitacja
+  // grawitacja ----------------------------------------------------------
   let gravityFactor = 1;
 
 if(boosting){
     gravityFactor = boostGravityFactor;
 
-    // ciąg
+    // ciąg --------------------------------------------------------------
     player.vy -= boostForce * dtSec;
 
     boostTimer -= dtSec;
@@ -859,9 +876,10 @@ if(boosting){
 }
 }
 
+//Platformy ===========================================================================
 function updatePlatforms(dt){
 
-  // --- KOLIZJE ---
+  // --- KOLIZJE ----------------------------------------------------------------------
   for(let p of platforms){
 
     let prevBottom = player.lastY + player.h;
@@ -876,13 +894,13 @@ function updatePlatforms(dt){
         player.y = p.y - player.h;
         player.vy = jumpPower;
 
-        // zwykły splash sadła
+        // zwykły splash sadła-------------------------------------------------------
         squashVel = -8;
 
-        //kurz przy lądowaniu
+        //kurz przy lądowaniu--------------------------------------------------------
         spawnDust(player.x + player.w/2, player.y + player.h);
 
-        // micro impact
+        // micro impact-----------------------------------------------------------------
         screenShakeTime = 0.08;
         screenShakePower = 8;
 
@@ -902,7 +920,7 @@ dustParticles.forEach(p=>{
 
 dustParticles = dustParticles.filter(p=>p.life>0);
 
-  // ===== KAMERA =====
+  // ===== KAMERA =====-----------------------------------------------------------------
   if(player.y < REAL_HEIGHT/2){
 
     let diff = REAL_HEIGHT/2 - player.y;
@@ -911,10 +929,12 @@ dustParticles = dustParticles.filter(p=>p.life>0);
     worldOffset += diff;
 
     for(let p of platforms) p.y += diff;
-for(let c of coins) c.y += diff;   // ← TO BRAKOWAŁO
+for(let c of coins) c.y += diff;   
 dangerY += diff;
   }
 }
+
+//Kasa ==========================================================================================
 function updateCoins(){
 
   for(let i = coins.length-1; i >= 0; i--){
@@ -923,7 +943,7 @@ function updateCoins(){
 
 
 
-    // kolizja
+    // kolizja -------------------------------------------------------------------------------------
     if(player.x < c.x + c.r &&
        player.x + player.w > c.x &&
        player.y < c.y + c.r &&
@@ -937,12 +957,38 @@ localStorage.setItem("piggyWallet", wallet);
 coins.splice(i,1);
     }
 
-    // usuwamy gdy spadną poza ekran
+    // usuwamy gdy spadną poza ekran ------------------------------------------------------------------
     if(c.y > REAL_HEIGHT + 20){
         coins.splice(i,1);
     }
   }
 }
+
+
+//Muzyka =================================================================================================
+function updateMusic(){
+
+  if(gameState === "play"){
+
+    if(!musicStarted){
+      music.currentTime = 0;
+      music.play().catch(()=>{});
+      musicStarted = true;
+    }
+
+  }else{
+
+    if(!music.paused){
+      music.pause();
+    }
+
+    musicStarted = false;
+  }
+
+}
+
+
+//DELTA Time ===============================================================================================
 function update(dt){
 
 
@@ -954,18 +1000,18 @@ if (fpsTimer >= 1000){
   fpsFrames = 0;
   fpsTimer = 0;
 }
-  // ===== CAP DT (anti lag spike) =====
+  // ===== CAP DT (anti lag spike) --------------------------------------------------------------------------
   if(dt > 50) dt = 50;
 
   const realDtSec = dt / 1000;
 
-  // ===== SLOW MOTION SYSTEM =====
+  // ===== SLOW MOTION SYSTEM ---------------------------------------------------------------------------------
   let timeScale = 1;
 
   if(deathSlowMo > 0){
 
-    let t = deathSlowMo / 0.50;        // 1 → 0
-    timeScale = 0.18 + 0.82*(1 - t);   // płynny powrót do 1
+    let t = deathSlowMo / 0.50;        
+    timeScale = 0.18 + 0.82*(1 - t);   
 
     deathSlowMo -= realDtSec;
     if(deathSlowMo < 0) deathSlowMo = 0;
@@ -974,13 +1020,13 @@ if (fpsTimer >= 1000){
   const dtScaled = dt * timeScale;
   const dtSec = dtScaled / 1000;
 
-  // ===== LOADING STATE =====
+  // ===== LOADING STATE --------------------------------------------------------------------------------------
   if(updateState(dtScaled)) return;
 
-  // ===== ZAWSZE DZIAŁA (UI / FX) =====
-  uiTime += realDtSec;  // UI nie spowalniamy
+  // ===== ZAWSZE DZIAŁA (UI / FX) ----------------------------------------------------------------------------
+  uiTime += realDtSec;  
 
-  // spadająca gwiazda timer
+  // spadająca gwiazda timer -----------------------------------------------------------------------------------
   nextShootingStar -= realDtSec;
 
   if(nextShootingStar <= 0 && !shootingStar){
@@ -1001,7 +1047,7 @@ if (fpsTimer >= 1000){
     if(shootingStar.life <= 0) shootingStar = null;
   }
 
-  // blink
+  // blink ----------------------------------------------------------------------------------------------------
   blinkTimer += realDtSec;
 
   if(blinkTimer > nextBlink){
@@ -1014,7 +1060,7 @@ if (fpsTimer >= 1000){
     nextBlink = blinkTimer + 2 + Math.random()*3;
   }
 
-  // efekty wizualne
+  // efekty wizualne --------------------------------------------------------------------------------------------
   if(screenShakeTime > 0){
     screenShakeTime -= realDtSec;
     if(screenShakeTime < 0) screenShakeTime = 0;
@@ -1054,15 +1100,15 @@ if (fpsTimer >= 1000){
     }
   }
 
-  // ===== STOP WORLD WHEN NOT PLAYING =====
+  // ===== STOP WORLD WHEN NOT PLAYING ------------------------------------------------------------------------
   if(gameState !== "play") return;
   if(rocketMode){
 
   rocketTimer -= dtSec;
 
-  // ciąg rakiety
+  // ciąg rakiety ----------------------------------------------------------------------------------------------
   player.vy -= 3200 * dtSec;
-  // rainbow trail
+  // rainbow trail ---------------------------------------------------------------------------------------------
   spawnDust(
     player.x + player.w/2,
     player.y + player.h + 8,
@@ -1073,7 +1119,7 @@ if (fpsTimer >= 1000){
     rocketMode = false;
   }
 }
-  // ===== SPRĘŻYNA SADŁA =====
+  // ===== SPRĘŻYNA SADŁA -----------------------------------------------------------------------------------------
   let spring = 120;
   let damping = 14;
 
@@ -1081,16 +1127,19 @@ if (fpsTimer >= 1000){
   squashVel -= squashVel * damping * dtSec;
   squash += squashVel * dtSec;
 
-  // ===== GAME LOGIC (SPALNIA SIĘ W SLOWMO) =====
+  // ===== GAME LOGIC (SPALNIA SIĘ W SLOWMO) ------------------------------------------------------------------------
 
   updatePlayer(dtScaled, dtSec);
   updatePlatforms(dtScaled);
   updateCoins();
   recyclePlatforms();
   updateScore();
+   updateMusic();
   updateDanger(dtSec);
 }
 
+
+//Kolory tęczy ===================================================================================================
 function getRainbowColor(t){
   let a = t * Math.PI * 6; // ile zmian koloru w trakcie boosta
   let r = Math.sin(a)*127+128;
@@ -1100,7 +1149,7 @@ function getRainbowColor(t){
 }
 
 
-
+//barwy kolorow ==================================================================================================
 function shadeColor(color, percent){
 
   let f = parseInt(color.slice(1),16);
@@ -1118,6 +1167,9 @@ function shadeColor(color, percent){
     (Math.round((t-B)*p)+B)
   ).toString(16).slice(1);
 }
+
+
+//Szejk ekran ======================================================================================================
 function getScreenShakeOffset(){
   if(screenShakeTime <= 0) return {x:0,y:0};
 
@@ -1133,18 +1185,21 @@ function getScreenShakeOffset(){
   };
 }
 
+
+//Kolor świni =======================================================================================================
 function getPigColor(dist){
 
-  // krytycznie — zaraz śmierć
+  // krytycznie — zaraz śmierć ----------
   if(dist < 140) return "#ff2a2a";
 
-  // ostrzeżenie
+  // ostrzeżenie ------------------------
   if(dist < 280) return "#ff00aa";
 
-  // bezpiecznie
+  // bezpiecznie ------------------------
   return "#00e5ff";
 }
 
+//Czujnik lawy =======================================================================================================
 function getLavaRatio(){
   let dist = dangerY - (player.y + player.h);
 
@@ -1158,7 +1213,7 @@ function getLavaRatio(){
   return t;
 }
 
-
+//Tło ==================================================================================================================
 function drawBackground(){
 
   // niebo
@@ -1180,12 +1235,12 @@ function drawBackground(){
   ctx.arc(GAME_WIDTH*0.78, 110, 80, 0, Math.PI*2);
   ctx.fill();
 
-  // ===== MIGAJĄCE GWIAZDY =====
+  // ===== MIGAJĄCE GWIAZDY ---------------------------------------------------------------------------------------
 for(let s of stars){
 
   let twinkle = Math.sin(uiTime * s.speed + s.phase) * 0.5 + 0.5;
 
-  // przy lawie lekko bardziej dramatyczne
+  // przy lawie lekko bardziej dramatyczne -----------------------------------------------------------------------
   let lavaT = getLavaRatio();
   twinkle += lavaT * 0.3;
 
@@ -1195,7 +1250,7 @@ for(let s of stars){
   ctx.fillRect(s.x, s.y, s.size, s.size);
 }
 
-  // chmury
+  // chmury -----------------------------------------------------------------------------------------------------
   ctx.fillStyle="rgba(255,255,255,0.08)";
   drawCloud(60,180,70);
   drawCloud(260,240,60);
@@ -1205,7 +1260,7 @@ for(let s of stars){
   drawCloud(120,330,90);
   drawCloud(280,420,110);
 
-// ===== SPAADAJĄCA GWIAZDA =====
+// ===== SPAADAJĄCA GWIAZDA ------------------------------------------------------------------------------------
 if(shootingStar){
 
   const s = shootingStar;
@@ -1214,7 +1269,7 @@ if(shootingStar){
 
   ctx.globalAlpha = Math.max(0, s.life);
 
-  // ogon
+  // ogon ------------------------------------------------------------------------------------------------------
   let grad = ctx.createLinearGradient(
     s.x, s.y,
     s.x + 60, s.y - 40
@@ -1230,8 +1285,8 @@ if(shootingStar){
   ctx.moveTo(s.x, s.y);
   ctx.lineTo(s.x + 60, s.y - 40);
   ctx.stroke();
-
-  // punkt
+ 
+  // punkt -------------------------------------------------------------------------------------------------------
   ctx.fillStyle = "white";
   ctx.beginPath();
   ctx.arc(s.x, s.y, 3, 0, Math.PI*2);
@@ -1241,7 +1296,7 @@ if(shootingStar){
 }
 }
 
-  // ====== WORLD ======
+  // ====== WORLD ======================================================================================================
 
 function drawWorld(){
   ctx.save();
@@ -1259,14 +1314,14 @@ function drawWorld(){
   ctx.restore();
 }
 
-
+//Rozbryzg lawy ======================================================================================================
 function drawLavaSplash(){
 
   if(!lavaSplash) return;
 
   const s = lavaSplash;
 
-  // ===== RIPPLE =====
+  // ===== RIPPLE ----------------------------------------------------------------------------------------------------
   let rippleSize = s.time * 180;
   let alpha = 1 - s.time;
 
@@ -1276,7 +1331,7 @@ function drawLavaSplash(){
   ctx.arc(s.x, s.y+5, rippleSize, 0, Math.PI*2);
   ctx.stroke();
 
-  // ===== CZĄSTKI =====
+  // ===== CZĄSTKI ----------------------------------------------------------------------------------------------------
   for(let p of s.particles){
 
     ctx.fillStyle = "rgba(255,80,0,"+p.life+")";
@@ -1292,11 +1347,13 @@ function drawLavaSplash(){
   }
 }
 
+
+// Rysowanie LAWA =====================================================================================================
 function drawLava(){
 
   const t = uiTime;
 
-  // ===== PODSTAWA =====
+  // ===== PODSTAWA --------------------------------------------------------------------------------------------------
   let grad = ctx.createLinearGradient(0,dangerY,0,REAL_HEIGHT);
   grad.addColorStop(0,"#ff2a2a");
   grad.addColorStop(0.5,"#ff0040");
@@ -1305,7 +1362,7 @@ function drawLava(){
   ctx.fillStyle = grad;
   ctx.fillRect(0,dangerY,GAME_WIDTH,REAL_HEIGHT);
 
-  // ===== FALA POWIERZCHNI =====
+  // ===== FALA POWIERZCHNI ------------------------------------------------------------------------------------------
   ctx.beginPath();
 
   const waveH = 6;
@@ -1329,7 +1386,7 @@ ctx.lineTo(0,REAL_HEIGHT);
   ctx.fillStyle = surf;
   ctx.fill();
 
-  // ===== BĄBLE =====
+  // ===== BĄBLE ----------------------------------------------------------------------------------------------------
   ctx.fillStyle="rgba(255,200,120,0.7)";
 
   for(let i=0;i<8;i++){
@@ -1345,8 +1402,10 @@ ctx.lineTo(0,REAL_HEIGHT);
   ctx.fillStyle="rgba(255,120,0,0.15)";
   ctx.fillRect(0,dangerY-20,GAME_WIDTH,20);
 }
-function drawCloud(cx, cy, r){
 
+
+//rysowanie chmur ====================================================================================================
+function drawCloud(cx, cy, r){
   ctx.beginPath();
 
   ctx.arc(cx-r*1.4, cy, r*0.9, 0, Math.PI*2);
@@ -1358,6 +1417,8 @@ function drawCloud(cx, cy, r){
   ctx.fill();
 }
 
+
+//rysowanie platform ==============================================================================================
   function drawPlatforms(){
 
   for(let p of platforms){
@@ -1379,6 +1440,9 @@ function drawCloud(cx, cy, r){
     drawCloud(cx-r*0.3, cy-r*0.25, r*0.6);
   }
 }
+
+
+// rysowanie kurzu =================================================================================================
 function drawDust(){
 
   for(let p of dustParticles){
@@ -1394,19 +1458,21 @@ function drawDust(){
   }
 }
 
+
+//Rysowanie Monety ==================================================================================================
   function drawCoins(){
 
   for(let c of coins){
 
-    // ===== PULS =====
+    // ===== PULS =====---------------------------------------------------------------------------------------------
     let pulse = 1 + Math.sin(uiTime*3 + c.x)*0.15;
     let r = c.r * pulse;
 
-    // ===== GLOW =====
+    // ===== GLOW =====--------------------------------------------------------------------------------------------
     ctx.shadowBlur = 4 + Math.sin(uiTime*8 + c.y)*6;
     ctx.shadowColor = "rgba(255,215,0,0.7)";
 
-    // ===== GRADIENT MONETY =====
+    // ===== GRADIENT MONETY =====---------------------------------------------------------------------------------
     const grad = ctx.createRadialGradient(
       c.x - r*0.4,
       c.y - r*0.4,
@@ -1430,39 +1496,41 @@ ctx.stroke();
 
     ctx.shadowBlur = 0;
 
-    // ===== SYMBOL $ (OBRÓT + 3D) =====
+    // ===== SYMBOL $ (OBRÓT + 3D) =====---------------------------------------------------------------------------
     ctx.save();
     ctx.translate(c.x, c.y);
 
-    // delikatny obrót w czasie
+    // delikatny obrót w czasie --------------------------------------------------------------------------------------
     let rot = Math.sin(uiTime*2 + c.y) * 0.25;
     ctx.rotate(rot);
 
-    // cień pod literą
+    // cień pod literą --------------------------------------------------------------------------------------------
     ctx.fillStyle = "rgba(0,0,0,0.35)";
     ctx.font = "bold " + (r * 1.1) + "px Arial";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText("$", r*0.05, r*0.08);
-
-    // główny kolor
+ 
+    // główny kolor --------------------------------------------------------------------------------------------------
     ctx.fillStyle = "#5a3b00";
     ctx.fillText("$", 0, 0);
 
-    // outline arcade
+    // outline arcade ---------------------------------------------------------------------------------------------
     ctx.lineWidth = r * 0.08;
     ctx.strokeStyle = "rgba(255,255,255,0.4)";
     ctx.strokeText("$", 0, 0);
 
     ctx.restore();
 
-    // ===== HIGHLIGHT =====
+    // ===== HIGHLIGHT =====---------------------------------------------------------------------------------------
     ctx.fillStyle="rgba(255,255,200,0.7)";
     ctx.beginPath();
     ctx.arc(c.x - r*0.3, c.y - r*0.3, r*0.25, 0, Math.PI*2);
     ctx.fill();
   }
 }
+
+// Oczy zamkniete w powiekach ====================================================================================
 function getLookDir(){
 
   // poziom — reaguje mocno
@@ -1483,6 +1551,9 @@ function getLookDir(){
   return {x, y};
 }
 
+
+
+//Rysowanie Gracza ==============================================================================================
   function drawPlayer(){
 
 
@@ -1517,7 +1588,7 @@ const size = baseSize;
 
   const r = size;
 
-    // ===== BOOST AURA =====
+    // ===== BOOST AURA =====--------------------------------------------------------------------------------------
 if(boosting || boostAfterglow > 0){
 
   let t = boosting
@@ -1531,12 +1602,14 @@ if(boosting || boostAfterglow > 0){
   ctx.shadowBlur = 0;
 }
 
-// ===== CIEŃ =====
+// ===== CIEŃ =====------------------------------------------------------------------------------------------------
     ctx.fillStyle = "rgba(0,0,0,0.25)";
     ctx.beginPath();
     ctx.ellipse( x + size*0.15, y + size*0.9, size*0.7, size*0.25, 0, 0, Math.PI*2 );
     ctx.fill();
-    // ===== GŁOWA (gradient 3D) =====
+    
+    
+    // ===== GŁOWA (gradient 3D) =====---------------------------------------------------------------------------
    let headGrad = ctx.createRadialGradient(
   x - size*0.3, y - size*0.4,
   size*0.1,
@@ -1550,10 +1623,12 @@ headGrad.addColorStop(1, shadeColor(pigColor,-0.6));
     ctx.beginPath();
     ctx.arc(x, y, size, 0, Math.PI*2);
     ctx.fill();
-    // ===== USZY =====
+    
+    
+    // ===== USZY =====----------------------------------------------------------------------------------------
 
 
-// lewe
+// lewe -----------------------------------------------
     ctx.fillStyle = "#ffb3c1";
 ctx.beginPath();
 ctx.moveTo(x - size*0.7, y - size*0.4);
@@ -1561,14 +1636,14 @@ ctx.lineTo(x - size*0.7, y - size*1.2);
 ctx.lineTo(x - size*0.15, y - size*0.95);
 ctx.fill();
 
-// prawe
+// prawe----------------------------------------------
     ctx.fillStyle = "#ffb3c1";
 ctx.beginPath();
 ctx.moveTo(x + size*0.7, y - size*0.4);
 ctx.lineTo(x + size*0.7, y - size*1.2);
 ctx.lineTo(x + size*0.15, y - size*0.95);
 ctx.fill();
-    //===== RYJ =====
+    //===== RYJ =====----------------------------------------------------------------------------------------
     let snoutGrad = ctx.createRadialGradient( x, y + size*0.3, size*0.1, x, y + size*0.3, size*0.6 );
     snoutGrad.addColorStop(0, "#ffb3c1");
     snoutGrad.addColorStop(1, "#e56b83"); ctx.fillStyle = snoutGrad;
@@ -1580,7 +1655,7 @@ ctx.fill();
     ctx.beginPath(); ctx.arc(x - size*0.18, y + size*0.35, size*0.1, 0, Math.PI*2);
     ctx.arc(x + size*0.18, y + size*0.35, size*0.1, 0, Math.PI*2);
     ctx.fill();
-// ===== OCZY =====
+// ===== OCZY =====------------------------------------------------------------------------------------------------
 
 let panicLevel = 0;
 
@@ -1605,14 +1680,14 @@ ctx.beginPath();
 ctx.arc(x - eyeOffsetX + rageShake, y - eyeOffsetY - tilt, eyeSize, 0, Math.PI*2);
 ctx.arc(x + eyeOffsetX + rageShake, y - eyeOffsetY + tilt, eyeSize, 0, Math.PI*2);
 ctx.fill();
-    // ===== POŁYSK W OCZACH =====
+    // ===== POŁYSK W OCZACH =====------------------------------------------------------------------------------------
     ctx.fillStyle = "white";
     ctx.beginPath();
     ctx.arc(x - size*0.32, y - size*0.3, size*0.05, 0, Math.PI*2);
     ctx.arc(x + size*0.32, y - size*0.3, size*0.05, 0, Math.PI*2);
     ctx.fill();
 
-    // ===== OKULARY (tylko dla pink) =====
+    // ===== OKULARY (tylko dla pink) =====---------------------------------------------------------------------------
 if(currentSkin === "pink"){
 
   ctx.strokeStyle = "black";
@@ -1621,17 +1696,17 @@ if(currentSkin === "pink"){
   ctx.strokeStyle = "black";
 ctx.lineWidth = size * 0.18;
 
-// lewa soczewka
+// lewa soczewka ------------------------------------------------------------------------------------------------------
 ctx.beginPath();
 ctx.arc(x - size*0.35, y - size*0.25, size*0.28, 0, Math.PI*2);
 ctx.fill();
 
-// prawa soczewka
+// prawa soczewka ---------------------------------------------------------------------------------------------------
 ctx.beginPath();
 ctx.arc(x + size*0.35, y - size*0.25, size*0.28, 0, Math.PI*2);
 ctx.fill();
 
-  // mostek
+  // mostek ------------------------------------------------------------------------------------------------------
   ctx.beginPath();
   ctx.moveTo(x - size*0.07, y - size*0.25);
   ctx.lineTo(x + size*0.07, y - size*0.25);
@@ -1639,7 +1714,7 @@ ctx.fill();
 
 }
 
-    // ===== POWIEKI =====
+    // ===== POWIEKI =====---------------------------------------------------------------------------------------------
 if(blink > 0){
   ctx.fillStyle = pigColor;
 
@@ -1653,7 +1728,7 @@ if(blink > 0){
 
     ctx.shadowBlur = 0;
 
-    // OGONEK
+    // OGONEK -------------------------------------------------------------------------------------------------------
 ctx.strokeStyle = "#ff9ecb";
 ctx.lineWidth = size * 0.18;
 ctx.lineCap = "round";
@@ -1665,7 +1740,7 @@ let tailY = size * 0.15;
 
 ctx.moveTo(tailX, tailY);
 
-// spiralny ogonek
+// spiralny ogonek --------------------------------------------------------------------------------------------------
 const wiggle = Math.sin(performance.now()*0.01) * size*0.05;
 
 ctx.arc(tailX + size*0.2 + wiggle, tailY, size*0.18, 0, Math.PI * 1.5);
@@ -1676,6 +1751,8 @@ ctx.stroke();
   return pigColor;
 }
 
+
+//Dym Spalonej świni ===========================================================================================
 function drawDeathSmoke(){
 
   if(gameState !== "dead" || deathSmokeTimer <= 0) return;
@@ -1699,7 +1776,7 @@ function drawDeathSmoke(){
     ctx.fill();
   }
 }
-
+//Rysowanie paniki ========================================================================================
 function drawPanicBubble(){
 
   if(!player) return;
@@ -1735,9 +1812,10 @@ function drawPanicBubble(){
 }
 
 
+// Rysowanie HUD =======================================================================================================
   function drawHUD(){
 
-  // panel
+  // panel ------------------------------------------------------------------------------------------------------------
   ctx.fillStyle="#2a2a2a";
   ctx.fillRect(0,0,GAME_WIDTH,HUD);
 
@@ -1771,6 +1849,9 @@ let pauseButton = { x:0, y:0, r:18 };
   ctx.fillStyle=`rgb(${r},${g},${b})`;
   ctx.fillRect(barX,barY,barW*lavaT,barH);
 }
+
+
+//Rysowanie Portfela ==================================================================================================
 function drawWalletTopRight(){
 
   ctx.font = "20px Arial";
@@ -1786,6 +1867,8 @@ function drawWalletTopRight(){
   ctx.shadowBlur = 0;
 }
 
+
+//Rysowanie Punktów ================================================================================================
  function drawScore(){
   ctx.textAlign="left";
 ctx.textBaseline="top";
@@ -1803,7 +1886,7 @@ ctx.shadowColor = "#ff9ecb";
 ctx.fillStyle = "#ffd1dc";
 ctx.fillText("Best: "+bestScore, SAFE, SAFE+25);
 
-   // ===== WALLET =====
+   // ===== WALLET =====------------------------------------------------------------------------------------------
 ctx.shadowBlur = 4;
 ctx.shadowColor = "#ffd76a";
 
@@ -1814,21 +1897,29 @@ ctx.shadowBlur = 0;
 
 
 }
+
+
+////////////////////////////////////////Kompasy//////////////////////////////////////////////////////////////
+
+//Rysowanie kompasów ========================================================================================
 function getCompassAngle(){
   let t = getLavaRatio();
 
-  // zaczyna reagować dopiero gdy naprawdę niebezpiecznie
+  // zaczyna reagować dopiero gdy naprawdę niebezpiecznie -----------------------------------------------------------
   let start = 0.55;
   if(t < start) return 0;
 
   let danger = (t - start) / (1 - start);
   if(danger > 1) danger = 1;
 
-  // easing — powoli, potem gwałtownie
+  // easing — powoli, potem gwałtownie --------------------------------------------------------------------------
   danger = danger * danger;
 
   return danger * Math.PI/2; // do 90°
 }
+
+
+//Rysowanie Kompasów -------------------------------------------------------------------------------------------
 function drawCompassCircle(){
 
   compass.x = GAME_WIDTH - SAFE - 32;
@@ -1843,23 +1934,23 @@ const cy = compass.y
 
   let lavaDist = dangerY - (player.y + player.h);
 
-  // poziom zagrożenia
+  // poziom zagrożenia ----------------------------------------------------------------------------------------------
   let danger = 0;
   if(lavaDist < 280) danger = 1 - (lavaDist / 280);
   if(danger < 0) danger = 0;
   if(danger > 1) danger = 1;
 
-  // puls
+  // puls -------------------------------------------------------------------------------------------------------------
   let pulse = Math.sin(uiTime * 6) * danger;
   let r = compass.r + getCompassClickPulse();
 
-  // kolor
+  // kolor ----------------------------------------------------------------------------------------------------------
   let color = getPigColor(lavaDist);
 
   ctx.shadowBlur = 25 * danger;
   ctx.shadowColor = color;
 
-  // obręcz
+  // obręcz --------------------------------------------------------------------------------------------------------
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI*2);
   ctx.lineWidth = 3;
@@ -1868,7 +1959,7 @@ const cy = compass.y
 
   ctx.shadowBlur = 0;
 
-  // środek
+  // środek --------------------------------------------------------------------------------------------------
   ctx.beginPath();
   ctx.arc(cx, cy, r*0.15, 0, Math.PI*2);
   ctx.fillStyle = color;
@@ -1876,14 +1967,14 @@ const cy = compass.y
 
 
 
-// obrót
+// obrót --------------------------------------------------------------------------------------------------
 let ang = getCompassAngle();
 
 ctx.save();
 ctx.translate(cx, cy);
 ctx.rotate(ang);
 
-// strzałka
+// strzałka --------------------------------------------------------------------------------------------------
 ctx.beginPath();
 ctx.moveTo(0, r*0.65);
 ctx.lineTo(-r*0.35, -r*0.2);
@@ -1895,7 +1986,7 @@ ctx.fill();
 
 ctx.restore();
 
-// ===== BOOST COUNT POD KOMPASEM =====
+// ===== BOOST COUNT POD KOMPASEM ===== -----------------------------------------------------------------------
 ctx.font = "bold 14px Arial";
 ctx.textAlign = "center";
 ctx.textBaseline = "top";
@@ -1913,17 +2004,23 @@ ctx.fillText(boostCharges, cx, cy + compass.r + 4);
 
 ctx.restore();
 }
+
+
+//interfejs =====================================================================================================
   function layoutUI(){
 
-  // najpierw pozycja kompasu
+  // najpierw pozycja kompasu -----------------------------------------------------------------------------------
   compass.x = GAME_WIDTH - SAFE - 32;
   compass.y = HUD/2;
-
-  // pauza obok kompasu (z lewej strony)
+ 
+  // pauza obok kompasu (z lewej strony) ------------------------------------------------------------------------
   const gap = 14; // odstęp między ikonami
   pauseButton.x = compass.x - compass.r - gap - pauseButton.r;
   pauseButton.y = HUD/2;
 }
+
+
+//Rysowanie ekranu startowego =================(loadingScreen)=======================================================
 function drawStartScreen(){
 
   ctx.fillStyle = "rgba(0,0,0,0.6)";
@@ -1931,7 +2028,7 @@ function drawStartScreen(){
 
   ctx.textAlign = "center";
 
-  ctx.font = "bold 54px Arial";
+  ctx.font = "bold 50px Arial";
   ctx.fillStyle = "#ff9ecb";
 
   let bounce = Math.sin(uiTime*2)*8;
@@ -1952,15 +2049,17 @@ function drawStartScreen(){
   );
 }
 
+
+//Rysowanie menu ==================================================================================================
 function drawMenu(){
 
-  // ciemne tło
+  // ciemne tło --------------------------------------------------------------------------------------------------
   ctx.fillStyle = "rgba(0,0,0,0.6)";
   ctx.fillRect(0,0,GAME_WIDTH,REAL_HEIGHT);
 
   ctx.textAlign = "center";
 
-  // ===== TITLE =====
+  // ===== TITLE -------------------------------------------------------------------------------------------------
   ctx.font = "bold 52px Arial";
   ctx.fillStyle = "#ff9ecb";
 
@@ -1972,7 +2071,7 @@ function drawMenu(){
     REAL_HEIGHT/2 - 120 + titleBounce
   );
 
-  // ===== BUTTONS =====
+  // ===== BUTTONS --------------------------------------------------------------------------------------------------
   ctx.font = "28px Arial";
 
   for(let b of menuButtons){
@@ -1983,7 +2082,7 @@ function drawMenu(){
     ctx.translate(GAME_WIDTH/2, b.y);
     ctx.scale(pulse, pulse);
 
-    // glow tylko dla PLAY
+    // glow tylko dla PLAY -------------------------------------------------------------------------------------------
     if(b.text === "PLAY"){
       ctx.shadowBlur = 4;
       ctx.shadowColor = "#ff6fa8";
@@ -1995,7 +2094,7 @@ function drawMenu(){
 
     ctx.fillText(b.text,0,0);
 
-    // outline dla czytelności
+    // outline dla czytelności------------------------------------------------------------------------------------
     ctx.lineWidth = 2;
     ctx.strokeStyle = "rgba(0,0,0,0.4)";
     ctx.strokeText(b.text,0,0);
@@ -2006,12 +2105,15 @@ function drawMenu(){
 
 
 
-  // ===== hint =====
+  // ===== hint -------------------------------------------------------------------------------------------------------
   ctx.font="16px Arial";
   ctx.fillStyle="rgba(255,255,255,0.6)";
   ctx.fillText("tap PLAY to start", GAME_WIDTH/2, REAL_HEIGHT/2 + 200);
    drawWalletTopRight();
 }
+
+
+//Rysowanie sklepu ==============================================================================================
 function drawShop(){
 
  ctx.fillStyle="rgba(0,0,0,0.65)";
@@ -2058,6 +2160,8 @@ function drawShop(){
  drawWalletTopRight();
 }
 
+
+//Rysowanie ustawień =============================================================================================
 function drawSettings(){
 
   ctx.fillStyle="rgba(0,0,0,0.65)";
@@ -2065,13 +2169,13 @@ function drawSettings(){
 
   ctx.textAlign="center";
 
-  // ===== TITLE =====
+  // ===== TITLE =====-----------------------------------------------------------------------------------------
   ctx.font="bold 48px Arial";
   ctx.fillStyle="white";
   ctx.fillText("SETTINGS", GAME_WIDTH/2, REAL_HEIGHT/2 - 160);
 
 
-  // ===== MUSIC VOLUME =====
+  // ===== MUSIC VOLUME =====----------------------------------------------------------------------------------------
   ctx.font="22px Arial";
   ctx.fillStyle="white";
   ctx.fillText("MUSIC VOLUME", GAME_WIDTH/2, REAL_HEIGHT/2 - 90);
@@ -2081,22 +2185,22 @@ function drawSettings(){
   let barX = GAME_WIDTH/2 - barW/2;
   let barY = REAL_HEIGHT/2 - 60;
 
-  // background bar
+  // background bar ---------------------------------------------------------------------------------------------------
   ctx.fillStyle="#333";
   ctx.fillRect(barX, barY, barW, barH);
 
-  // filled bar
+  // filled bar -------------------------------------------------------------------------------------------------------
   ctx.fillStyle="#ff9ecb";
   ctx.fillRect(barX, barY, barW * musicVolume, barH);
 
-  // knob
+  // knob ----------------------------------------------------------------------------------------------------------
   ctx.beginPath();
   ctx.arc(barX + barW * musicVolume, barY + barH/2, 8, 0, Math.PI*2);
   ctx.fillStyle="white";
   ctx.fill();
 
 
-  // ===== VIBRATION =====
+  // ===== VIBRATION =====---------------------------------------------------------------------------------------------
   ctx.font="24px Arial";
   ctx.fillStyle="white";
 
@@ -2105,14 +2209,13 @@ function drawSettings(){
   ctx.fillText(vibText, GAME_WIDTH/2, REAL_HEIGHT/2 + 10);
 
 
-  // ===== FPS =====
-  let fpsText = showFPS ? "FPS: ON" : "FPS: OFF";
+  // ===== FPS =====--------------------------------------------------------------------------------------------
 
   ctx.fillText(fpsText, GAME_WIDTH/2, REAL_HEIGHT/2 + 60);
    drawWalletTopRight();
 
 
-  // ===== BACK BUTTON =====
+  // ===== BACK BUTTON =====-------------------------------------------------------------------------------------------
 
 for(let b of settingsButtons){
 
@@ -2158,6 +2261,9 @@ ctx.fillText(label,0,0);
   ctx.restore();
 }
 }
+
+
+//GameoverSCREEN =========================================================================================
 function drawOverlay(title, sub){
   // ciemne tło
   ctx.fillStyle = "rgba(0,0,0,0.6)";
@@ -2169,14 +2275,14 @@ function drawOverlay(title, sub){
   const cx = GAME_WIDTH / 2;
   const cy = REAL_HEIGHT / 2 - 40;
 
-  // ================= DEAD =================
+  // ================= DEAD -------------------------------------------------------------------------------------
 
 
   if(gameState === "dead"){
 
     ctx.font = "bold 64px Arial";
 
-    // czerwony glow
+    // czerwony glow ---------------------------------------------------------------------------------------------------
     ctx.shadowBlur = 4;
     ctx.shadowColor = "#ff0000";
 
@@ -2192,13 +2298,13 @@ function drawOverlay(title, sub){
     ctx.fillStyle = "#ff1a1a";
     ctx.fillText("GAME OVER", cx, cy);
 
-    // ===== REALISTIC 3D BACON =====
+    // ===== REALISTIC 3D BACON ----------------------------------------------------------------------------------------
 if(baconMode){
 
   let bx = GAME_WIDTH/2;
   let targetY = REAL_HEIGHT/2 + 95;
 
-// animacja spadania + bounce
+// animacja spadania + bounce ------------------------------------------------------------------------------------------
 let drop = Math.min(baconSpawnTime * 600, 140);
 let bounce = Math.sin(Math.min(baconSpawnTime*6, Math.PI)) * 12;
 
@@ -2217,7 +2323,7 @@ ctx.beginPath();
 ctx.ellipse(0, 18, 40, 8, 0, 0, Math.PI*2);
 ctx.fill();
 
-  // ===== falowany kształt =====
+  // ===== falowany kształt =====------------------------------------------------------------------------------
   ctx.beginPath();
 
   for(let x = -w/2; x <= w/2; x+=4){
@@ -2235,7 +2341,7 @@ ctx.fill();
 
   ctx.closePath();
 
-  // ===== mięso gradient =====
+  // ===== mięso gradient =====-------------------------------------------------------------------------------
   let meatGrad = ctx.createLinearGradient(0, -h/2, 0, h/2);
   meatGrad.addColorStop(0, "#ff8a8a");
   meatGrad.addColorStop(0.5, "#ff4d4d");
@@ -2244,7 +2350,9 @@ ctx.fill();
   ctx.fillStyle = meatGrad;
   ctx.fill();
 
-  // ===== warstwy tłuszczu =====
+
+
+  // ===== warstwy tłuszczu =====-------------------------------------------------------------------------------
   ctx.lineWidth = 6;
   ctx.strokeStyle = "#ffe9c9";
   ctx.globalAlpha = 0.9;
@@ -2261,7 +2369,7 @@ ctx.fill();
 
   ctx.globalAlpha = 1;
 
-  // ===== połysk =====
+  // ===== połysk =====-------------------------------------------------------------------------------
   ctx.fillStyle = "rgba(255,255,255,0.2)";
   ctx.beginPath();
   ctx.ellipse(0, -6, 35, 6, 0, 0, Math.PI*2);
@@ -2285,9 +2393,9 @@ for(let i=0;i<3;i++){
   ctx.translate(GAME_WIDTH/2, b.y);
   ctx.scale(pulse,pulse);
 
-  // glow tylko restart
+  // glow tylko restart -------------------------------------------------------------------------------
   if(b.text === "RESTART"){
-    ctx.shadowBlur = 15;
+    ctx.shadowBlur = 5;
     ctx.shadowColor = "#ff2a2a";
   }
 
@@ -2298,22 +2406,22 @@ for(let i=0;i<3;i++){
 
   ctx.restore();
 }
-    // ===== HORROR BLOOD DRIP =====
+    // ===== HORROR BLOOD DRIP -------------------------------------------------------------------------------
 for(let i = -4; i <= 4; i++){
 
   let baseX = cx + i * 32;
 
-  // lekki chaos
+  // lekki chaos -------------------------------------------------------------------------------
   let wobble = Math.sin(uiTime*2 + i*1.3) * 4;
   let dripX = baseX + wobble;
 
-  // długość zmienna
+  // długość zmienna -------------------------------------------------------------------------------
   let dripLen = 25 + Math.sin(uiTime*3 + i*2) * 18;
 
-  // szerokość losowa
+  // szerokość losowa -------------------------------------------------------------------------------
   let width = 6 + (Math.sin(i*3.7)*2);
 
-  // kolor główny
+  // kolor główny -------------------------------------------------------------------------------
   ctx.fillStyle = "#7a0000";
 
   ctx.beginPath();
@@ -2324,12 +2432,12 @@ for(let i = -4; i <= 4; i++){
   ctx.closePath();
   ctx.fill();
 
-  // okrągła kropla na końcu
+  // okrągła kropla na końcu -------------------------------------------------------------------------------
   ctx.beginPath();
   ctx.arc(dripX, cy + dripLen, width * 0.6, 0, Math.PI*2);
   ctx.fill();
 
-  // połysk krwi
+  // połysk krwi -------------------------------------------------------------------------------
   ctx.fillStyle = "rgba(255,80,80,0.25)";
   ctx.beginPath();
   ctx.arc(dripX - width*0.2, cy + dripLen - width*0.2, width*0.25, 0, Math.PI*2);
@@ -2338,7 +2446,7 @@ for(let i = -4; i <= 4; i++){
 
   }
 
-  // ================= INNE STANY =================
+  // ================= INNE STANY ====================================================================================
   else{
     ctx.font = "50px Arial";
     ctx.fillStyle = "white";
@@ -2351,6 +2459,9 @@ if(gameState !== "dead"){
   ctx.fillText(sub, GAME_WIDTH/2, REAL_HEIGHT/2 + 30);
 }
 }
+
+
+//Rysowanie pauzy ===================================================================================================
 function drawPauseOverlay(){
 
   ctx.fillStyle="rgba(0,0,0,0.65)";
@@ -2381,7 +2492,7 @@ function drawPauseOverlay(){
 
 }
 
-
+//Rysowanie stron ================================================================================================
 function drawOverlayLayer(){
 
   if(gameState==="start") drawStartScreen();
@@ -2403,6 +2514,9 @@ function drawOverlayLayer(){
     drawPauseOverlay();
 
 }
+
+
+//Rysowanie pauzy =================================================================================================
 function drawPauseButton(){
   ctx.beginPath();
   ctx.arc(pauseButton.x, pauseButton.y, pauseButton.r, 0, Math.PI*2);
@@ -2414,7 +2528,7 @@ function drawPauseButton(){
   ctx.fillRect(pauseButton.x+1, pauseButton.y-8, 4,16);
 }
 
-// ================= DRAW =================
+// ================= DRAW ======================================================================================
 
 function draw(){
   layoutUI();
@@ -2424,7 +2538,7 @@ function draw(){
 
   const shake = getScreenShakeOffset();
 
-  // świat tylko podczas gry
+  // świat tylko podczas gry ---------------------------------------------------------------------------------
   if(gameState === "play" || gameState === "pause" || gameState === "dead"){
     ctx.save();
     ctx.translate(shake.x, shake.y);
@@ -2432,18 +2546,18 @@ function draw(){
     ctx.restore();
   }
 
-  // HUD stabilny
+  // HUD stabilny ------------------------------------------------------------------------------------------------------
   if(gameState === "play" || gameState === "pause"){
     drawHUD();
   }
 
-  // overlay + UI
+  // overlay + UI ----------------------------------------------------------------------------------------------------
   drawOverlayLayer();
 
   if(gameState === "play")
     drawPauseButton();
 
-  // flash na końcu
+  // flash na końcu -------------------------------------------------------------------------------------------------
   if(boostFlash > 0){
     ctx.fillStyle = "rgba(255,255,255," + (boostFlash*0.35) + ")";
     ctx.fillRect(0,0,GAME_WIDTH,REAL_HEIGHT);
@@ -2463,7 +2577,7 @@ if(showFPS){
   ctx.fillText("FPS: " + fps, GAME_WIDTH - 10, REAL_HEIGHT - 10);
 }
 }
-// ================= LOOP =================
+// ================= LOOP =============================================================================================
 
 let lastTime=performance.now();
 function loop(now){
