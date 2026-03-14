@@ -6,7 +6,7 @@ const HUD = 70;
 const REAL_HEIGHT = GAME_HEIGHT + HUD;
 
 const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
+const ctx = canvas.getContext("2d"); 
 
 
 // blokuje zaznaczanie i menu przytrzymania
